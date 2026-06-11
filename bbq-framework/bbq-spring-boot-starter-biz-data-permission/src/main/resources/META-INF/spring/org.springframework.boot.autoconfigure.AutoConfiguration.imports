@@ -1,0 +1,3 @@
+com.bbq.framework.datapermission.config.BbqDataPermissionAutoConfiguration
+com.bbq.framework.datapermission.config.BbqDeptDataPermissionAutoConfiguration
+com.bbq.framework.datapermission.config.BbqDataPermissionRpcAutoConfiguration

@@ -1,0 +1,3 @@
+com.bbq.framework.datasource.config.BbqDataSourceAutoConfiguration
+com.bbq.framework.mybatis.config.BbqMybatisAutoConfiguration
+com.bbq.framework.translate.config.BbqTranslateAutoConfiguration

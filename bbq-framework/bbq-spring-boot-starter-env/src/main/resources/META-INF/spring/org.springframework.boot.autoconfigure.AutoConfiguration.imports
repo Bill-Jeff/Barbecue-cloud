@@ -1,0 +1,2 @@
+com.bbq.framework.env.config.BbqEnvWebAutoConfiguration
+com.bbq.framework.env.config.BbqEnvRpcAutoConfiguration

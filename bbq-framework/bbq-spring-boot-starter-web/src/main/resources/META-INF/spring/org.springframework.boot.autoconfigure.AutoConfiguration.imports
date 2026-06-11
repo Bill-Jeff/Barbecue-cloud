@@ -1,0 +1,8 @@
+com.bbq.framework.apilog.config.BbqApiLogAutoConfiguration
+com.bbq.framework.jackson.config.BbqJacksonAutoConfiguration
+com.bbq.framework.swagger.config.BbqSwaggerAutoConfiguration
+com.bbq.framework.web.config.BbqWebAutoConfiguration
+com.bbq.framework.apilog.config.BbqApiLogRpcAutoConfiguration
+com.bbq.framework.xss.config.BbqXssAutoConfiguration
+com.bbq.framework.banner.config.BbqBannerAutoConfiguration
+com.bbq.framework.encrypt.config.BbqApiEncryptAutoConfiguration

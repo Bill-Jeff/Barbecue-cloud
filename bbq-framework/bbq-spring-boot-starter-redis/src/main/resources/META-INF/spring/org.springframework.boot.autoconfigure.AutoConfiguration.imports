@@ -1,0 +1,2 @@
+com.bbq.framework.redis.config.BbqRedisAutoConfiguration
+com.bbq.framework.redis.config.BbqCacheAutoConfiguration

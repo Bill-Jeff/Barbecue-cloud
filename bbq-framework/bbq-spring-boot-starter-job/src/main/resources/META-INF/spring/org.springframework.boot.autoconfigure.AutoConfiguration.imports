@@ -1,0 +1,2 @@
+com.bbq.framework.quartz.config.BbqXxlJobAutoConfiguration
+com.bbq.framework.quartz.config.BbqAsyncAutoConfiguration

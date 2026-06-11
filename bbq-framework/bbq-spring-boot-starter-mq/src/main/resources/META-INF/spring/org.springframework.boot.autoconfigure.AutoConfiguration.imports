@@ -1,0 +1,3 @@
+com.bbq.framework.mq.redis.config.BbqRedisMQProducerAutoConfiguration
+com.bbq.framework.mq.redis.config.BbqRedisMQConsumerAutoConfiguration
+com.bbq.framework.mq.rabbitmq.config.BbqRabbitMQAutoConfiguration

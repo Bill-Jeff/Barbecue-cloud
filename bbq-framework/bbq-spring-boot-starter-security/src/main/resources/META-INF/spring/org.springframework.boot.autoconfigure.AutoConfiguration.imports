@@ -1,0 +1,5 @@
+com.bbq.framework.security.config.BbqSecurityRpcAutoConfiguration
+com.bbq.framework.security.config.BbqSecurityAutoConfiguration
+com.bbq.framework.security.config.BbqWebSecurityConfigurerAdapter
+com.bbq.framework.operatelog.config.BbqOperateLogConfiguration
+com.bbq.framework.operatelog.config.BbqOperateLogRpcAutoConfiguration

@@ -1,0 +1,2 @@
+com.bbq.framework.tenant.config.BbqTenantRpcAutoConfiguration
+com.bbq.framework.tenant.config.BbqTenantAutoConfiguration

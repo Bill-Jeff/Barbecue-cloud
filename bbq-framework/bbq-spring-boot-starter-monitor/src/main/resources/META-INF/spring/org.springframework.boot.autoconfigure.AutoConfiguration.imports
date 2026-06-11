@@ -1,0 +1,2 @@
+com.bbq.framework.tracer.config.BbqTracerAutoConfiguration
+com.bbq.framework.tracer.config.BbqMetricsAutoConfiguration

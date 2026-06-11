@@ -1,0 +1,4 @@
+com.bbq.framework.idempotent.config.BbqIdempotentConfiguration
+com.bbq.framework.lock4j.config.BbqLock4jConfiguration
+com.bbq.framework.ratelimiter.config.BbqRateLimiterConfiguration
+com.bbq.framework.signature.config.BbqApiSignatureAutoConfiguration
