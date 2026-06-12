@@ -21,36 +21,8 @@ public class BannerApplicationRunner implements ApplicationRunner {
             ThreadUtil.sleep(1, TimeUnit.SECONDS); // 延迟 1 秒，保证输出到结尾
             log.info("\n----------------------------------------------------------\n\t" +
                             "项目启动成功！\n\t" +
-                            "接口文档: \t{} \n\t" +
-                            "开发文档: \t{} \n\t" +
-                            "视频教程: \t{} \n" +
-                            "----------------------------------------------------------",
-                    "https://cloud.iocoder.cn/api-doc/",
-                    "https://cloud.iocoder.cn",
-                    "https://t.zsxq.com/02Yf6M7Qn");
+                       "----------------------------------------------------------");
 
-            // 数据报表
-            System.out.println("[报表模块 bbq-module-report 教程][参考 https://cloud.iocoder.cn/report/ 开启]");
-            // 工作流
-            System.out.println("[工作流模块 bbq-module-bpm 教程][参考 https://cloud.iocoder.cn/bpm/ 开启]");
-            // 商城系统
-            System.out.println("[商城系统 bbq-module-mall 教程][参考 https://cloud.iocoder.cn/mall/build/ 开启]");
-            // ERP 系统
-            System.out.println("[ERP 系统 bbq-module-erp - 教程][参考 https://cloud.iocoder.cn/erp/build/ 开启]");
-            // WMS 仓库管理系统
-            System.out.println("[WMS 仓库管理系统 bbq-module-wms - 教程][参考 https://cloud.iocoder.cn/wms/build/ 开启]");
-            // CRM 系统
-            System.out.println("[CRM 系统 bbq-module-crm - 教程][参考 https://cloud.iocoder.cn/crm/build/ 开启]");
-            // MES 系统
-            System.out.println("[MES 系统 bbq-module-mes - 教程][参考 https://cloud.iocoder.cn/mes/build/ 开启]");
-            // IM 即时通讯
-            System.out.println("[IM 即时通讯 bbq-module-im - 教程][参考 https://cloud.iocoder.cn/im/build/ 开启]");
-            // 微信公众号
-            System.out.println("[微信公众号 bbq-module-mp 教程][参考 https://cloud.iocoder.cn/mp/build/ 开启]");
-            // 支付平台
-            System.out.println("[支付系统 bbq-module-pay - 教程][参考 https://cloud.iocoder.cn/pay/build/ 开启]");
-            // AI 大模型
-            System.out.println("[AI 大模型 bbq-module-ai - 教程][参考 https://cloud.iocoder.cn/ai/build/ 开启]");
         });
     }
 

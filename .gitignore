@@ -1,29 +1,22 @@
-
-# 查看更多 .gitignore 配置 -> https://help.github.com/articles/ignoring-files/
-
+# Maven / Java
 target/
 !.mvn/wrapper/maven-wrapper.jar
-
 .flattened-pom.xml
+*.class
+**/package-info.java
 
-### STS ###
-.apt_generated
-.classpath
-.factorypath
-.project
-.settings
-.springBeans
-.sts4-cache
-
-### IntelliJ IDEA ###
-.idea
+# IDE
+.idea/
+.vscode/
 *.iws
 *.iml
 *.ipr
-*.class
-target/*
+.apt_generated
+.factorypath
+.springBeans
+.sts4-cache
 
-### NetBeans ###
+# NetBeans
 /nbproject/private/
 /nbbuild/
 /dist/
@@ -31,45 +24,28 @@ target/*
 /.nb-gradle/
 /build/
 
-
-
-### admin-web ###
-
-# dependencies
+# Node
 **/node_modules
-
-# roadhog-api-doc ignore
-/src/utils/request-temp.js
-_roadhog-api-doc
-
-# production
-/dist
-/.vscode
-
-# misc
-.DS_Store
+yarn.lock
+package-lock.json
 npm-debug.log*
 yarn-error.log
 
-/coverage
-.idea
-yarn.lock
-package-lock.json
-*bak
-.vscode
+# Frontend (ignored)
+bbq-ui/
 
-# visual studio code
-.history
+# OS
+.DS_Store
+Thumbs.db
+
+# Misc
 *.log
-
-functions/mock
-.temp/**
-
-# umi
-.umi
-.umi-production
-
-# screenshot
+*.bak
+.bak
+coverage/
+.history
+.temp/
 screenshot
 .firebase
 sessionStore
+*.vm
