@@ -27,10 +27,7 @@ public class SecurityConfiguration {
                 // Spring Boot Actuator 的安全配置
                 registry.requestMatchers("/actuator").permitAll()
                         .requestMatchers("/actuator/**").permitAll();
-                // Druid 监控
-                registry.requestMatchers("/druid/**").permitAll();
-                // 文件读取
-                registry.requestMatchers(buildAdminApi("/infra/file/*/get/**")).permitAll();
+                registry.requestMatchers("/app-api/**").permitAll();
 
                 // TODO 芋艿：这个每个项目都需要重复配置，得捉摸有没通用的方案
                 // RPC 服务的安全配置

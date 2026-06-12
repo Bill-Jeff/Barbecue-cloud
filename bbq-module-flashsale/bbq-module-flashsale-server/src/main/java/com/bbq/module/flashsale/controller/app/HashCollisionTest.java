@@ -1,4 +1,4 @@
-package com.bbq.module.flashsale.controller;
+package com.bbq.module.flashsale.controller.app;
 
 import com.alibaba.fastjson2.JSONObject;
 import com.gitee.apanlh.util.random.RandomUtils;

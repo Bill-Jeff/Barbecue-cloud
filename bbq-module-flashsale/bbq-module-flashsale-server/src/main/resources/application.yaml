@@ -1,6 +1,6 @@
 spring:
   application:
-    name: infra-server
+    name: flashsale-server
 
   profiles:
     active: local
@@ -13,6 +13,30 @@ spring:
     import:
       - optional:classpath:application-${spring.profiles.active}.yaml # 加载【本地】配置
       - optional:nacos:${spring.application.name}-${spring.profiles.active}.yaml # 加载【Nacos】的配置
+
+  cloud:
+    loadbalancer:
+      ribbon:
+        enabled: false # 禁用 Ribbon，只用 Spring Cloud LoadBalancer
+      cache:
+        enabled: true
+        ttl: 30s # LoadBalancer 服务列表缓存，减少 Nacos 查询
+    openfeign:
+      okhttp:
+        enabled: true # 启用 OkHttp 连接池，避免每次 Feign 调用新建 TCP 连接
+      compression:
+        request:
+          enabled: true
+          mime-types: application/json,application/xml
+          min-request-size: 1024
+        response:
+          enabled: true
+          mime-types: application/json,application/xml
+      client:
+        config:
+          default:
+            connect-timeout: 2000
+            read-timeout: 5000
 
   # Servlet 配置
   servlet:
@@ -158,8 +182,11 @@ bbq:
     description: 提供管理员管理的所有功能
     version: ${bbq.info.version}
   tenant: # 多租户相关配置项
-    enable: true
+    enable: false
     ignore-urls:
     ignore-tables:
+      - product
+      - order_info
+      - order_item
 
 debug: false

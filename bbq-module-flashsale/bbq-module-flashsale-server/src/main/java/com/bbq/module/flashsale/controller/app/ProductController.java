@@ -1,4 +1,4 @@
-package com.bbq.module.flashsale.controller;
+package com.bbq.module.flashsale.controller.app;
 
 import com.bbq.module.flashsale.config.Result;
 import com.bbq.module.flashsale.entity.Category;
@@ -14,7 +14,7 @@ import java.util.List;
 import java.util.Map;
 
 @RestController
-@RequestMapping("/api")
+@RequestMapping("/flashsale/api")
 @RequiredArgsConstructor
 public class ProductController {
 

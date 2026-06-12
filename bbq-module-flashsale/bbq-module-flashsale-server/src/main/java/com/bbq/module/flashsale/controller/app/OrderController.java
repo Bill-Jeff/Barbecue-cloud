@@ -1,4 +1,4 @@
-package com.bbq.module.flashsale.controller;
+package com.bbq.module.flashsale.controller.app;
 
 import com.bbq.module.flashsale.config.Result;
 import com.bbq.module.flashsale.entity.OrderInfo;
@@ -12,7 +12,7 @@ import org.springframework.web.bind.annotation.RestController;
 import java.util.Map;
 
 @RestController
-@RequestMapping("/api/orders")
+@RequestMapping("/flashsale/api/orders")
 @RequiredArgsConstructor
 public class OrderController {
 

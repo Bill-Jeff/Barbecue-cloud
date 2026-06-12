@@ -1,4 +1,4 @@
-package com.bbq.module.flashsale.controller;
+package com.bbq.module.flashsale.controller.app;
 
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.bbq.module.flashsale.config.Result;
@@ -14,7 +14,7 @@ import java.util.*;
 import java.util.stream.Collectors;
 
 @RestController
-@RequestMapping("/api")
+@RequestMapping("/flashsale/api")
 @RequiredArgsConstructor
 public class PvController {
 
