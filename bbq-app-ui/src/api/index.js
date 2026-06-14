@@ -33,8 +33,8 @@ async function tryRefreshToken() {
   if (!refreshToken) return false
   try {
     const res = await axios.post('/app-api/flashsale/api/admin/refresh', { refreshToken })
-    const { token } = res.data.data
-    localStorage.setItem('token', token)
+    const { accessToken } = res.data.data
+    localStorage.setItem('token', accessToken)
     return true
   } catch {
     return false
@@ -46,7 +46,7 @@ api.interceptors.response.use(
   res => {
     const body = res.data
     if (body && typeof body.code === 'number') {
-      if (body.code === 200) {
+      if (body.code === 0 || body.code === 200) {
         res.data = body.data
         res.code = body.code
         return res

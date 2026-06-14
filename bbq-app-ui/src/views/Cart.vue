@@ -41,10 +41,10 @@
         </div>
 
         <div class="table-input">
-          <div class="table-label">
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><line x1="3" y1="9" x2="21" y2="9"/><line x1="9" y1="21" x2="9" y2="9"/></svg>
+          <label class="table-label">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><line x1="3" y1="9" x2="21" y2="9"/><line x1="9" y1="21" x2="9" y2="9"/></svg>
             桌号
-          </div>
+          </label>
           <input v-model="tableNo" type="number" placeholder="请输入桌号" class="table-field" />
         </div>
 
@@ -65,6 +65,7 @@
 <script setup>
 import { ref } from 'vue'
 import { useRouter } from 'vue-router'
+import { showToast } from 'vant'
 import { useCartStore } from '../stores/cart'
 import { createOrder } from '../api'
 
@@ -101,11 +102,14 @@ function getFoodImage(name) { return imageMap[name] || imageMap['羊肉串'] }
 function removeAll(productId) { cart.items = cart.items.filter(i => i.productId !== productId) }
 
 async function submitOrder() {
-  if (!tableNo.value) { alert('请输入桌号'); return }
+  const no = String(tableNo.value || '').trim()
+  console.log('tableNo.value', no)
+  console.log('tableNo.value', tableNo.value)
+  if (!no) { showToast({ message: '请输入桌号', icon: 'warning-o', className: 'toast-error', duration: 2000 }); return }
   submitting.value = true
   try {
     const orderData = {
-      tableNo: tableNo.value,
+      tableNo: no,
       items: cart.items.map(i => ({
         productId: i.productId, productName: i.name, price: i.price, quantity: i.quantity,
       })),
@@ -124,7 +128,7 @@ async function submitOrder() {
     cart.clear()
     router.replace('/order-result')
   } catch {
-    alert('下单失败，请重试')
+    showToast({ message: '下单失败，请重试', icon: 'warning-o', className: 'toast-error', duration: 2000 })
   } finally {
     submitting.value = false
   }
@@ -296,8 +300,6 @@ async function submitOrder() {
 /* Table input */
 .table-input {
   background: var(--surface);
-  backdrop-filter: blur(16px);
-  -webkit-backdrop-filter: blur(16px);
   border-radius: var(--radius-lg);
   margin-top: 14px;
   padding: 16px 18px;

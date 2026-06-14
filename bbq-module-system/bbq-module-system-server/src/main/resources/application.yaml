@@ -170,7 +170,7 @@ bbq:
     description: 提供管理员管理的所有功能
     version: ${bbq.info.version}
   tenant: # 多租户相关配置项
-    enable: true
+    enable: false
     ignore-urls:
     ignore-visit-urls:
       - /admin-api/system/user/profile/**

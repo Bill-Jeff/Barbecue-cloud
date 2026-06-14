@@ -26,5 +26,4 @@ public class AuthLoginRespDTO {
 
     @Schema(description = "过期时间", requiredMode = Schema.RequiredMode.REQUIRED)
     private LocalDateTime expiresTime;
-
 }

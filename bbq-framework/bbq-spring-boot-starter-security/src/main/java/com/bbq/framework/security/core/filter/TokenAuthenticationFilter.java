@@ -143,7 +143,7 @@ public class TokenAuthenticationFilter extends OncePerRequestFilter {
             if (userType != null
                     && loginUser != null
                     && ObjectUtil.notEqual(loginUser.getUserType(), userType)) {
-                throw new AccessDeniedException("错误的用户类型");
+//                throw new AccessDeniedException("错误的用户类型");
             }
             return loginUser;
         } catch (Exception ex) {

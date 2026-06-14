@@ -74,13 +74,10 @@ async function handleLogin() {
   try {
     const res = await adminLogin(username.value, password.value)
     const d = res.data
-    localStorage.setItem('token', d.token)
+    localStorage.setItem('token', d.accessToken)
     localStorage.setItem('refreshToken', d.refreshToken)
-    localStorage.setItem('role', d.role)
-    localStorage.setItem('nickname', d.nickname || '')
-    const redirect = router.currentRoute.value.query.redirect
-      || (d.role === 'admin' ? '/m-admin' : '/')
-    router.replace(redirect)
+    const redirect = router.currentRoute.value.query.redirect || '/'
+    location.replace(redirect)
   } catch {
     errorMsg.value = '登录失败，账号或密码错误'
   } finally {
