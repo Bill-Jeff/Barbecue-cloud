@@ -76,6 +76,8 @@ async function handleLogin() {
     const d = res.data
     localStorage.setItem('token', d.accessToken)
     localStorage.setItem('refreshToken', d.refreshToken)
+    localStorage.setItem('role', d.role || 'user')
+    localStorage.setItem('nickname', d.nickname || '用户')
     const redirect = router.currentRoute.value.query.redirect || '/'
     location.replace(redirect)
   } catch {

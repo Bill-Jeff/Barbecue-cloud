@@ -56,9 +56,13 @@ export const useCartStore = defineStore('cart', () => {
     }
   }
 
+  function hasInCart(productId) {
+    return items.value.some(i => i.productId === productId)
+  }
+
   function clear() {
     items.value = []
   }
 
-  return { items, totalCount, totalPrice, addItem, removeItem, clear }
+  return { items, totalCount, totalPrice, addItem, removeItem, hasInCart, clear }
 })

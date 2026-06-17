@@ -219,6 +219,16 @@
           <span class="hot-pv">{{ item.pv }} 次浏览</span>
         </div>
       </div>
+      <!-- 客服入口 -->
+      <div class="cs-entry" @click="router.push('/chat')">
+        <div class="cs-entry-left">
+          <span class="cs-avatar">🐨</span>
+          <span class="cs-text">还是不知道吃什么，来找小考问问</span>
+        </div>
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="cs-arrow">
+          <polyline points="9 18 15 12 9 6"/>
+        </svg>
+      </div>
     </div>
 
     <!-- ===== 我的 Tab ===== -->
@@ -329,9 +339,15 @@ const orders = ref([])
 const hotProducts = ref([])
 const hotLoading = ref(false)
 
-const isLoggedIn = computed(() => !!localStorage.getItem('token'))
-const nickname = computed(() => localStorage.getItem('nickname') || '')
-const role = computed(() => localStorage.getItem('role') || '')
+const isLoggedIn = ref(false)
+const nickname = ref('')
+const role = ref('')
+
+function refreshAuth() {
+  isLoggedIn.value = !!localStorage.getItem('token')
+  nickname.value = localStorage.getItem('nickname') || ''
+  role.value = localStorage.getItem('role') || ''
+}
 
 const emojiMap = {
   '羊肉串': '🍢', '牛肉串': '🥩', '鸡翅': '🍗', '五花肉': '🥓',
@@ -416,6 +432,7 @@ function logout() {
   localStorage.removeItem('token')
   localStorage.removeItem('role')
   localStorage.removeItem('nickname')
+  refreshAuth()
   activeTab.value = 0
 }
 
@@ -449,6 +466,7 @@ function updateFlashCountdown() {
 }
 
 onMounted(async () => {
+  refreshAuth()
   const [catRes, prodRes, flashRes] = await Promise.all([
     getCategories(), getProducts(), getFlashSales().catch(() => ({ data: { data: [] } })),
   ])
@@ -1262,6 +1280,47 @@ onUnmounted(() => {
   font-weight: 700;
   color: var(--accent-bright);
   white-space: nowrap;
+  flex-shrink: 0;
+}
+
+/* ===== Customer service entry ===== */
+.cs-entry {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-top: 12px;
+  padding: 16px 18px;
+  border-radius: var(--radius-lg);
+  background: linear-gradient(135deg, #fff8f0, #fff0e0);
+  border: 1px solid rgba(240, 168, 48, 0.2);
+  cursor: pointer;
+  animation: rise-in 0.5s ease both;
+  transition: transform 0.15s;
+}
+.cs-entry:active { transform: scale(0.98); }
+.cs-entry-left {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+.cs-avatar {
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, #ffecd2, #fcb69f);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 24px;
+  flex-shrink: 0;
+}
+.cs-text {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--text-bright);
+}
+.cs-arrow {
+  color: var(--muted);
   flex-shrink: 0;
 }
 

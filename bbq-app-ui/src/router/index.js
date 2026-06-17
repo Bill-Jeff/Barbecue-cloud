@@ -28,6 +28,11 @@ const routes = [
     name: 'FlashSale',
     component: () => import('../views/FlashSale.vue'),
   },
+  {
+    path: '/chat',
+    name: 'Chat',
+    component: () => import('../views/Chat.vue'),
+  },
 ]
 
 const router = createRouter({

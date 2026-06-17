@@ -195,3 +195,13 @@ export function getHotProducts(limit = 10) {
 export function addPv(productId) {
   return api.post(`/pv/${productId}`)
 }
+
+// ========== AI 客服 ==========
+
+export function sendChatMsg(userInputMsg) {
+  const params = new URLSearchParams()
+  params.append('userInputMsg', userInputMsg)
+  return api.post('/ai/chat', params, {
+    headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+  })
+}
