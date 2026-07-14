@@ -17,6 +17,7 @@
         <module>bbq-module-system</module>
         <module>bbq-module-infra</module>
         <module>bbq-module-flashsale</module>
+        <module>bbq-module-crm</module>
 <!--        <module>bbq-module-member</module>-->
 <!--        <module>bbq-module-bpm</module>-->
 <!--        <module>bbq-module-pay</module>-->

@@ -58,6 +58,19 @@ spring:
                 - Path=/app-api/flashsale/**
               filters:
                 - RewritePath=/app-api/flashsale/v3/api-docs, /v3/api-docs
+            ## crm-server 服务
+            - id: crm-admin-api # 路由的编号
+              uri: grayLb://crm-server
+              predicates: # 断言，作为路由的匹配条件，对应 RouteDefinition 数组
+                - Path=/admin-api/crm/**
+              filters:
+                - RewritePath=/admin-api/crm/v3/api-docs, /v3/api-docs # 配置，保证转发到 /v3/api-docs
+            - id: crm-app-api # 路由的编号
+              uri: grayLb://crm-server
+              predicates: # 断言，作为路由的匹配条件，对应 RouteDefinition 数组
+                - Path=/app-api/crm/**
+              filters:
+                - RewritePath=/app-api/crm/v3/api-docs, /v3/api-docs
             ## infra-server 服务
             - id: infra-admin-api # 路由的编号
               uri: grayLb://infra-server

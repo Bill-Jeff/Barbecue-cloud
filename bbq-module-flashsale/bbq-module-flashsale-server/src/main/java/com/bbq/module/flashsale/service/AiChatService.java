@@ -54,8 +54,9 @@ public class AiChatService {
 
     private String buildMenuContext() {
         List<Product> allProducts = productService.listAllProducts();
-        if (allProducts.isEmpty()) return null;
-
+        if (allProducts.isEmpty()) {
+            return null;
+        }
         List<Map<String, Object>> hotProducts = pvService.getHotProducts(10);
         Set<Long> hotIds = hotProducts.stream()
                 .map(p -> ((Number) p.get("id")).longValue())
@@ -75,4 +76,5 @@ public class AiChatService {
         }
         return sb.toString();
     }
+
 }

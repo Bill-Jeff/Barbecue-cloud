@@ -70,11 +70,11 @@ spring:
         #          password: JSm:g(*%lU4ZAkz06cd52KqT3)i1?H7W # SQL Server 连接的示例
         #          username: SYSDBA # DM 连接的示例
         #          password: SYSDBA # DM 连接的示例
-#        slave: # 模拟从库，可根据自己需要修改
-#          lazy: true # 开启懒加载，保证启动速度
-#          url: jdbc:mysql://127.0.0.1:3306/ruoyi-vue-pro?useSSL=false&serverTimezone=Asia/Shanghai&allowPublicKeyRetrieval=true&nullCatalogMeansCurrent=true&rewriteBatchedStatements=true
-#          username: root
-#          password: 123456
+        slave: # 模拟从库，可根据自己需要修改
+          lazy: true # 开启懒加载，保证启动速度
+          url: jdbc:mysql://127.0.0.1:3306/crm?useSSL=false&serverTimezone=Asia/Shanghai&allowPublicKeyRetrieval=true&nullCatalogMeansCurrent=true&rewriteBatchedStatements=true
+          username: root
+          password: root123
 
   # Redis 配置。Redisson 默认的配置足够使用，一般不需要进行调优
   data:
@@ -83,6 +83,15 @@ spring:
       port: 6379 # 端口
       database: 10 # 数据库索引
 #      password: 123456 # 密码，建议生产环境开启
+
+  # elasticsearch 配置项
+  elasticsearch:
+    uris: http://localhost:9200
+    username: elastic
+    password: admin123
+    connection-timeout: 5s
+    socket-timeout: 30s
+
 
 --- #################### MQ 消息队列相关配置 ####################
 
@@ -157,3 +166,8 @@ bbq:
     mock-enable: true
   access-log: # 访问日志的配置项
     enable: true
+
+spring:
+  ai:
+    dashscope:
+      api-key: sk-ws-H.REEMMEM.Hw6s.MEQCIF9MxHasuK3tzSk_RHb0t9vwRPLhxEbHZZhnZ-TeDaLpAiABo3XVMv6XLfl0Y3KuVATi-xdNo0t4iQdw9R0XksV03Q

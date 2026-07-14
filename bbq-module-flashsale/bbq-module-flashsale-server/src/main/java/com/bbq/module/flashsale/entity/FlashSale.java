@@ -5,12 +5,14 @@ import com.baomidou.mybatisplus.annotation.TableField;
 import com.baomidou.mybatisplus.annotation.TableId;
 import com.baomidou.mybatisplus.annotation.TableName;
 import lombok.Data;
+import org.springframework.data.elasticsearch.annotations.Document;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 
 @Data
 @TableName("flash_sale")
+@Document(indexName = "flash_sale")
 public class FlashSale {
     @TableId(type = IdType.AUTO)
     private Long id;

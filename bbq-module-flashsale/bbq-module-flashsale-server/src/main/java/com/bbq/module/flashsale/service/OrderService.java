@@ -34,7 +34,6 @@ public class OrderService {
             item.setOrderId(orderInfo.getId());
             orderItemMapper.insert(item);
         }
-
         return orderInfo.getId();
     }
 }
