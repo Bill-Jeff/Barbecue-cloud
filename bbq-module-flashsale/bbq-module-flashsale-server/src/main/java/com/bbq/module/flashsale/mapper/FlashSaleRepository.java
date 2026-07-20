@@ -13,19 +13,19 @@ public interface FlashSaleRepository extends ElasticsearchRepository<FlashSale, 
     /**
      * 通过方法名自动实现查询：根据名称查找
      *
-     * @param name
+     * @param productName
      * @return
      */
-    List<FlashSale> findByName(String name);
+    List<FlashSale> findByProductName(String productName);
 
     /**
      * 根据名称和价格范围查找
      *
-     * @param name
+     * @param productName
      * @param minPrice
      * @param maxPrice
      * @return
      */
-    List<FlashSale> findByNameAndPriceBetween(String name, double minPrice, double maxPrice);
+    List<FlashSale> findByProductNameAndPriceBetween(String productName, double minPrice, double maxPrice);
 
 }

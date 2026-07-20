@@ -2,30 +2,44 @@
   <div class="chat-page">
     <!-- Header -->
     <header class="chat-header">
-      <button class="chat-back" @click="router.back()">
+      <button class="chat-back" @click="router.back()" aria-label="返回">
         <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
           <polyline points="15 18 9 12 15 6"/>
         </svg>
       </button>
       <div class="chat-header-info">
-        <div class="chat-avatar">🐨</div>
+        <div class="chat-avatar">{{ currentAssistant.avatar }}</div>
         <div class="chat-header-text">
-          <span class="chat-header-name">小考</span>
-          <span class="chat-header-sub">AI 美食助手</span>
+          <span class="chat-header-name">{{ currentAssistant.name }}</span>
+          <span class="chat-header-sub">{{ currentAssistant.sub }}</span>
         </div>
       </div>
+
+      <!-- 助理切换 -->
+      <div class="assistant-switch" role="tablist" aria-label="选择 AI 助理">
+        <button
+          v-for="id in assistantIds"
+          :key="id"
+          class="switch-btn"
+          :class="{ 'switch-btn--active': id === currentAssistantId }"
+          role="tab"
+          :aria-selected="id === currentAssistantId"
+          @click="switchAssistant(id)"
+        >{{ ASSISTANTS[id].name }}</button>
+      </div>
+
       <button class="chat-clear" @click="clearHistory">清空</button>
     </header>
 
     <!-- Messages -->
     <div class="chat-body" ref="chatBodyRef">
       <div v-if="messages.length === 0 && !sending" class="chat-welcome">
-        <div class="welcome-icon">🐨</div>
-        <p class="welcome-title">你好，我是小考！</p>
-        <p class="welcome-desc">不知道吃什么？告诉我你的口味偏好，我来帮你推荐~</p>
+        <div class="welcome-icon">{{ currentAssistant.avatar }}</div>
+        <p class="welcome-title">{{ currentAssistant.welcomeTitle }}</p>
+        <p class="welcome-desc">{{ currentAssistant.welcomeDesc }}</p>
         <div class="welcome-chips">
           <button
-            v-for="q in quickQuestions"
+            v-for="q in currentAssistant.quickQuestions"
             :key="q"
             class="welcome-chip"
             @click="send(q)"
@@ -60,7 +74,7 @@
           ref="inputRef"
           v-model="inputText"
           class="chat-input"
-          placeholder="输入你想吃的..."
+          :placeholder="currentAssistant.placeholder"
           @keydown.enter="send(inputText)"
         />
         <button
@@ -68,6 +82,7 @@
           :class="{ 'send-btn--active': inputText.trim() }"
           :disabled="!inputText.trim() || sending"
           @click="send(inputText)"
+          aria-label="发送"
         >
           <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
             <line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/>
@@ -79,16 +94,55 @@
 </template>
 
 <script setup>
-import { ref, nextTick, onMounted, watch } from 'vue'
+import { ref, computed, nextTick, onMounted, watch } from 'vue'
 import { useRouter } from 'vue-router'
-import { sendChatMsg, getProducts } from '../api'
+import { sendAliChat, sendOpenChat, getProducts } from '../api'
 import { useCartStore } from '../stores/cart'
 import { showToast } from 'vant'
 
 const router = useRouter()
 const cart = useCartStore()
 
-const CHAT_KEY = 'bbq_chat_history'
+// ===== 助理配置 =====
+const ASSISTANTS = {
+  kao: {
+    id: 'kao',
+    name: '小考',
+    avatar: '🐨',
+    sub: 'AI 美食助手',
+    api: sendAliChat,
+    welcomeTitle: '你好，我是小考！',
+    welcomeDesc: '不知道吃什么？告诉我你的口味偏好，我来帮你推荐~',
+    placeholder: '输入你想吃的...',
+    quickQuestions: [
+      '今晚有什么推荐的？',
+      '想吃辣的，有什么选择？',
+      '两人份的烤肉推荐一下',
+      '有没有适合宵夜的？',
+    ],
+  },
+  shi: {
+    id: 'shi',
+    name: '小石',
+    avatar: '🦊',
+    sub: 'AI 智能助手',
+    api: sendOpenChat,
+    welcomeTitle: '你好，我是小石！',
+    welcomeDesc: '我可以为你解答各种问题，有什么想聊的都可以问我~',
+    placeholder: '输入你想问的...',
+    quickQuestions: [
+      '帮我写一段产品文案',
+      '有什么好书推荐吗？',
+      '怎么提高工作效率？',
+      '给我讲个冷知识',
+    ],
+  },
+}
+const assistantIds = Object.keys(ASSISTANTS)
+
+const ASSISTANT_KEY = 'bbq_assistant'
+const currentAssistantId = ref(localStorage.getItem(ASSISTANT_KEY) || 'kao')
+const currentAssistant = computed(() => ASSISTANTS[currentAssistantId.value])
 
 const messages = ref([])
 const inputText = ref('')
@@ -98,27 +152,38 @@ const chatBodyRef = ref(null)
 const inputRef = ref(null)
 const products = ref([])
 
-const quickQuestions = [
-  '今晚有什么推荐的？',
-  '想吃辣的，有什么选择？',
-  '两人份的烤肉推荐一下',
-  '有没有适合宵夜的？',
-]
+// ===== 历史记录：每个助理独立保存 =====
+function chatKey(id) {
+  return `bbq_chat_history_${id}`
+}
 
 function loadHistory() {
+  const id = currentAssistantId.value
   try {
-    const raw = localStorage.getItem(CHAT_KEY)
-    if (raw) messages.value = JSON.parse(raw)
-  } catch { messages.value = [] }
+    const raw = localStorage.getItem(chatKey(id))
+    messages.value = raw ? JSON.parse(raw) : []
+  } catch {
+    messages.value = []
+  }
 }
 
 function saveHistory() {
-  localStorage.setItem(CHAT_KEY, JSON.stringify(messages.value))
+  localStorage.setItem(chatKey(currentAssistantId.value), JSON.stringify(messages.value))
 }
 
 function clearHistory() {
   messages.value = []
-  localStorage.removeItem(CHAT_KEY)
+  localStorage.removeItem(chatKey(currentAssistantId.value))
+}
+
+// ===== 切换助理 =====
+function switchAssistant(id) {
+  if (id === currentAssistantId.value) return
+  currentAssistantId.value = id
+  // 记录当前选中的助理，刷新/重进后保持
+  localStorage.setItem(ASSISTANT_KEY, id)
+  loadHistory()
+  nextTick(() => inputRef.value?.focus())
 }
 
 function parseCartTag(content) {
@@ -158,7 +223,8 @@ async function send(text) {
   await scrollToBottom()
 
   try {
-    const res = await sendChatMsg(msg)
+    // 调用当前选中助理对应的接口
+    const res = await currentAssistant.value.api(msg)
     typing.value = false
     const rawContent = res.data || '抱歉，我没能理解您的问题~'
     const { text: displayText, cartNames } = parseCartTag(rawContent)
@@ -213,7 +279,7 @@ onMounted(async () => {
 .chat-header {
   display: flex;
   align-items: center;
-  gap: 12px;
+  gap: 10px;
   padding: 12px 16px;
   background: var(--surface);
   backdrop-filter: blur(16px);
@@ -243,6 +309,7 @@ onMounted(async () => {
   align-items: center;
   gap: 10px;
   flex: 1;
+  min-width: 0;
 }
 .chat-avatar {
   width: 40px;
@@ -253,10 +320,12 @@ onMounted(async () => {
   align-items: center;
   justify-content: center;
   font-size: 22px;
+  flex-shrink: 0;
 }
 .chat-header-text {
   display: flex;
   flex-direction: column;
+  min-width: 0;
 }
 .chat-header-name {
   font-size: 17px;
@@ -266,6 +335,9 @@ onMounted(async () => {
 .chat-header-sub {
   font-size: 11px;
   color: var(--muted-soft);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 .chat-clear {
   border: 0;
@@ -274,8 +346,39 @@ onMounted(async () => {
   font-size: 12px;
   cursor: pointer;
   padding: 4px 8px;
+  flex-shrink: 0;
 }
 .chat-clear:active { color: var(--ember); }
+
+/* ===== 助理切换 ===== */
+.assistant-switch {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  padding: 3px;
+  border-radius: 999px;
+  background: var(--surface-glass);
+  border: 1px solid var(--line);
+  flex-shrink: 0;
+}
+.switch-btn {
+  border: 0;
+  background: transparent;
+  color: var(--muted-soft);
+  font-size: 13px;
+  font-weight: 600;
+  padding: 5px 12px;
+  border-radius: 999px;
+  cursor: pointer;
+  transition: all 0.2s;
+  white-space: nowrap;
+}
+.switch-btn--active {
+  background: linear-gradient(135deg, var(--accent), var(--accent-bright));
+  color: #fff;
+  box-shadow: 0 2px 8px rgba(232, 98, 44, 0.3);
+}
+.switch-btn--active:active { transform: scale(0.95); }
 
 /* ===== Body ===== */
 .chat-body {
@@ -304,6 +407,7 @@ onMounted(async () => {
   font-size: 13px;
   color: var(--muted);
   margin: 0 0 24px;
+  text-align: center;
 }
 .welcome-chips {
   display: flex;

@@ -31,8 +31,7 @@
           :style="{ animationDelay: index * 60 + 'ms' }"
         >
           <div class="thumb">
-            <img v-if="item.image" :src="item.image" class="thumb-img" />
-            <img v-else :src="item.foodImage" class="thumb-img" />
+            <img :src="item.foodImage" class="thumb-img" />
           </div>
           <div>
             <h3>{{ item.name }}</h3>
@@ -118,6 +117,7 @@
 import { ref, computed, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { getCategories, getProducts } from '../api'
+import { getFoodImage } from '../utils/foodImages'
 import { useCartStore } from '../stores/cart'
 
 const router = useRouter()
@@ -136,22 +136,6 @@ const emojiMap = {
   '烤馒头片': '🍞', '烤韭菜': '🥬', '烤茄子': '🍆',
   '啤酒': '🍺', '王老吉': '🧃', '酸梅汤': '🥤',
 }
-const imageMap = {
-  '羊肉串': 'https://images.unsplash.com/photo-1555939594-58d7cb561ad1?w=200&h=200&fit=crop',
-  '牛肉串': 'https://images.unsplash.com/photo-1544025162-d76694265947?w=200&h=200&fit=crop',
-  '鸡翅': 'https://images.unsplash.com/photo-1527477396000-e27163b4bbed?w=200&h=200&fit=crop',
-  '五花肉': 'https://images.unsplash.com/photo-1544025162-d76694265947?w=200&h=200&fit=crop&q=80',
-  '烤腰子': 'https://images.unsplash.com/photo-1555939594-58d7cb561ad1?w=200&h=200&fit=crop&q=80',
-  '烤生蚝': 'https://images.unsplash.com/photo-1559737558-2f5a35f4523b?w=200&h=200&fit=crop',
-  '烤鱿鱼': 'https://images.unsplash.com/photo-1565680018093-ebb6505b4d59?w=200&h=200&fit=crop',
-  '烤大虾': 'https://images.unsplash.com/photo-1559737558-2f5a35f4523b?w=200&h=200&fit=crop&q=80',
-  '烤馒头片': 'https://images.unsplash.com/photo-1509440159596-0249088772ff?w=200&h=200&fit=crop',
-  '烤韭菜': 'https://images.unsplash.com/photo-1540420773420-3366772f4999?w=200&h=200&fit=crop',
-  '烤茄子': 'https://images.unsplash.com/photo-1518977956812-cd3dbadaaf31?w=200&h=200&fit=crop',
-  '啤酒': 'https://images.unsplash.com/photo-1535958636474-b021ee887b13?w=200&h=200&fit=crop',
-  '王老吉': 'https://images.unsplash.com/photo-1544145945-f90425340c7e?w=200&h=200&fit=crop',
-  '酸梅汤': 'https://images.unsplash.com/photo-1544145945-f90425340c7e?w=200&h=200&fit=crop&q=80',
-}
 const tagsMap = {
   '羊肉串': ['销量王', '推荐加辣'], '牛肉串': ['低脂感', '鲜嫩'],
   '鸡翅': ['招牌酱料', '现烤'], '五花肉': ['肥瘦相间', '经典'],
@@ -164,13 +148,12 @@ const tagsMap = {
 const unitMap = { '啤酒': '瓶', '王老吉': '罐', '酸梅汤': '杯' }
 
 function getEmoji(name) { return emojiMap[name] || '🔥' }
-function getFoodImage(name) { return imageMap[name] || imageMap['羊肉串'] }
 
 const enrichedProducts = computed(() =>
   products.value.map(p => ({
     ...p,
     emoji: emojiMap[p.name] || '🔥',
-    foodImage: imageMap[p.name] || imageMap['羊肉串'],
+    foodImage: getFoodImage(p.name),
     tags: tagsMap[p.name] || ['推荐'],
     unit: unitMap[p.name] || '串',
   }))

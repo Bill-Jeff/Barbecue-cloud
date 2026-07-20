@@ -82,8 +82,7 @@
         >
           <div class="card-visual">
             <div class="thumb">
-              <img v-if="item.image || item.imageUrl" :src="item.image || item.imageUrl" class="thumb-img" />
-              <img v-else :src="item.foodImage" class="thumb-img" />
+              <img :src="item.foodImage" class="thumb-img" />
             </div>
             <div class="thumb-glow"></div>
           </div>
@@ -166,7 +165,7 @@
     <div v-show="activeTab === 1" class="page">
       <div class="section-title">
         <h2>点单记录</h2>
-        <span class="section-hint">{{ orders.length }} 笔订单</span>
+        <span class="section-hint">{{ role === 'admin' ? '全部顾客订单 · ' + orders.length + ' 笔' : orders.length + ' 笔订单' }}</span>
       </div>
       <div v-if="orders.length === 0" class="empty-state">
         <div class="empty-icon">
@@ -211,7 +210,7 @@
       <div v-else class="hot-list">
         <div class="hot-item" v-for="(item, index) in hotProducts" :key="item.id">
           <span class="hot-rank" :class="{ 'hot-rank--top': index < 3 }">{{ index + 1 }}</span>
-          <img v-if="item.image" :src="item.image" class="hot-img" />
+          <img :src="getFoodImage(item.name)" class="hot-img" />
           <div class="hot-info">
             <span class="hot-name">{{ item.name }}</span>
             <span class="hot-price">¥{{ Number(item.price).toFixed(0) }}</span>
@@ -295,7 +294,8 @@
 <script setup>
 import { ref, computed, onMounted, onUnmounted, watch, h } from 'vue'
 import { useRouter } from 'vue-router'
-import { getCategories, getProducts, getFlashSales, getHotProducts } from '../api'
+import { getCategories, getProducts, getFlashSales, getHotProducts, listAllOrders } from '../api'
+import { getFoodImage } from '../utils/foodImages'
 import { useCartStore } from '../stores/cart'
 
 const router = useRouter()
@@ -355,22 +355,6 @@ const emojiMap = {
   '烤馒头片': '🍞', '烤韭菜': '🥬', '烤茄子': '🍆',
   '啤酒': '🍺', '王老吉': '🧃', '酸梅汤': '🥤',
 }
-const imageMap = {
-  '羊肉串': 'https://images.unsplash.com/photo-1555939594-58d7cb561ad1?w=200&h=200&fit=crop',
-  '牛肉串': 'https://images.unsplash.com/photo-1544025162-d76694265947?w=200&h=200&fit=crop',
-  '鸡翅': 'https://images.unsplash.com/photo-1527477396000-e27163b4bbed?w=200&h=200&fit=crop',
-  '五花肉': 'https://images.unsplash.com/photo-1544025162-d76694265947?w=200&h=200&fit=crop&q=80',
-  '烤腰子': 'https://images.unsplash.com/photo-1555939594-58d7cb561ad1?w=200&h=200&fit=crop&q=80',
-  '烤生蚝': 'https://images.unsplash.com/photo-1559737558-2f5a35f4523b?w=200&h=200&fit=crop',
-  '烤鱿鱼': 'https://images.unsplash.com/photo-1565680018093-ebb6505b4d59?w=200&h=200&fit=crop',
-  '烤大虾': 'https://images.unsplash.com/photo-1559737558-2f5a35f4523b?w=200&h=200&fit=crop&q=80',
-  '烤馒头片': 'https://images.unsplash.com/photo-1509440159596-0249088772ff?w=200&h=200&fit=crop',
-  '烤韭菜': 'https://images.unsplash.com/photo-1540420773420-3366772f4999?w=200&h=200&fit=crop',
-  '烤茄子': 'https://images.unsplash.com/photo-1518977956812-cd3dbadaaf31?w=200&h=200&fit=crop',
-  '啤酒': 'https://images.unsplash.com/photo-1535958636474-b021ee887b13?w=200&h=200&fit=crop',
-  '王老吉': 'https://images.unsplash.com/photo-1544145945-f90425340c7e?w=200&h=200&fit=crop',
-  '酸梅汤': 'https://images.unsplash.com/photo-1544145945-f90425340c7e?w=200&h=200&fit=crop&q=80',
-}
 const tagsMap = {
   '羊肉串': ['销量王', '推荐加辣'], '牛肉串': ['低脂感', '鲜嫩'],
   '鸡翅': ['招牌酱料', '现烤'], '五花肉': ['肥瘦相间', '经典'],
@@ -384,14 +368,13 @@ const unitMap = { '啤酒': '瓶', '王老吉': '罐', '酸梅汤': '杯' }
 const catIconMap = { '烤串': '🍢', '海鲜': '🦪', '蔬菜': '🥬', '主食': '🍞', '酒水': '🍺' }
 
 function getEmoji(name) { return emojiMap[name] || '🔥' }
-function getFoodImage(name) { return imageMap[name] || imageMap['羊肉串'] }
 function getCatIcon(name) { return catIconMap[name] || '🔥' }
 
 const enrichedProducts = computed(() =>
   products.value.map(p => ({
     ...p,
     emoji: emojiMap[p.name] || '🔥',
-    foodImage: imageMap[p.name] || imageMap['羊肉串'],
+    foodImage: getFoodImage(p.name),
     tags: tagsMap[p.name] || ['推荐'],
     unit: unitMap[p.name] || '串',
   }))
@@ -415,8 +398,43 @@ function getQty(productId) {
 }
 
 function loadOrders() {
-  try { orders.value = JSON.parse(localStorage.getItem('shaokao_orders') || '[]') }
-  catch { orders.value = [] }
+  if (role.value === 'admin') {
+    // 超级管理员：从后端拉取全部顾客订单
+    listAllOrders()
+      .then(res => {
+        orders.value = (res.data || []).map(o => ({
+          id: o.id,
+          tableNo: o.tableNo,
+          total: Number(o.totalAmount) || 0,
+          time: formatTime(o.createTime),
+          items: (o.items || []).map(i => ({
+            productId: i.productId,
+            productName: i.productName,
+            price: Number(i.price) || 0,
+            quantity: i.quantity,
+          })),
+        }))
+      })
+      .catch(() => { orders.value = [] })
+  } else {
+    // 普通用户：仅查看本机本地订单
+    try { orders.value = JSON.parse(localStorage.getItem('shaokao_orders') || '[]') }
+    catch { orders.value = [] }
+  }
+}
+
+// 兼容后端 LocalDateTime 的多种序列化形式（字符串 / 数组）
+function formatTime(t) {
+  if (!t) return ''
+  if (Array.isArray(t)) {
+    const [y, m, d, hh = 0, mm = 0] = t
+    const p = n => String(n).padStart(2, '0')
+    return `${y}-${p(m)}-${p(d)} ${p(hh)}:${p(mm)}`
+  }
+  const d = new Date(t)
+  if (isNaN(d.getTime())) return String(t)
+  const p = n => String(n).padStart(2, '0')
+  return `${d.getFullYear()}-${p(d.getMonth() + 1)}-${p(d.getDate())} ${p(d.getHours())}:${p(d.getMinutes())}`
 }
 
 async function loadHotProducts() {
@@ -484,7 +502,8 @@ onMounted(async () => {
 })
 
 watch(activeTab, (val) => {
-  if (val === 2) loadHotProducts()
+  if (val === 1) loadOrders()
+  else if (val === 2) loadHotProducts()
 })
 
 onUnmounted(() => {

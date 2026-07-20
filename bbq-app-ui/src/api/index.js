@@ -106,6 +106,11 @@ export function createOrder(data) {
   return api.post('/orders', data)
 }
 
+// 超级管理员查看全部顾客订单（点单记录）
+export function listAllOrders() {
+  return api.get('/orders')
+}
+
 // ========== 登录 ==========
 
 export function adminLogin(username, password) {
@@ -197,11 +202,20 @@ export function addPv(productId) {
 }
 
 // ========== AI 客服 ==========
+// 小考 -> ali-chat；小石 -> open-chat
 
-export function sendChatMsg(userInputMsg) {
+export function sendAliChat(userInputMsg) {
   const params = new URLSearchParams()
   params.append('userInputMsg', userInputMsg)
-  return api.post('/ai/chat', params, {
+  return api.post('/ai/ali-chat', params, {
+    headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+  })
+}
+
+export function sendOpenChat(userInputMsg) {
+  const params = new URLSearchParams()
+  params.append('userInputMsg', userInputMsg)
+  return api.post('/ai/open-chat', params, {
     headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
   })
 }

@@ -1,5 +1,6 @@
 package com.bbq.module.flashsale.service;
 
+import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.bbq.module.flashsale.entity.OrderInfo;
 import com.bbq.module.flashsale.entity.OrderItem;
 import com.bbq.module.flashsale.mapper.OrderItemMapper;
@@ -35,5 +36,21 @@ public class OrderService {
             orderItemMapper.insert(item);
         }
         return orderInfo.getId();
+    }
+
+    /**
+     * 列出全部订单（含明细），按下单时间倒序，供管理后台查询顾客的点单记录。
+     */
+    public List<OrderInfo> listAllOrders() {
+        List<OrderInfo> orders = orderMapper.selectList(
+            new LambdaQueryWrapper<OrderInfo>().orderByDesc(OrderInfo::getCreateTime)
+        );
+        for (OrderInfo order : orders) {
+            List<OrderItem> items = orderItemMapper.selectList(
+                new LambdaQueryWrapper<OrderItem>().eq(OrderItem::getOrderId, order.getId())
+            );
+            order.setItems(items);
+        }
+        return orders;
     }
 }

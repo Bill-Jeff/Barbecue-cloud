@@ -11,15 +11,15 @@ import java.util.Set;
 import java.util.stream.Collectors;
 
 @Service
-public class AiChatService {
+public class AliAiChatService {
 
     private final ChatClient chatClient;
     private final PvService pvService;
     private final ProductService productService;
 
-    public AiChatService(ChatClient.Builder builder,
-                         PvService pvService,
-                         ProductService productService) {
+    public AliAiChatService(ChatClient.Builder builder,
+                            PvService pvService,
+                            ProductService productService) {
         this.pvService = pvService;
         this.productService = productService;
         this.chatClient = builder
