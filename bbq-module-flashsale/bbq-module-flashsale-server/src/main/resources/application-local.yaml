@@ -167,7 +167,3 @@ bbq:
   access-log: # 访问日志的配置项
     enable: true
 
-spring:
-  ai:
-    dashscope:
-      api-key: sk-ws-H.REEMMEM.Hw6s.MEQCIF9MxHasuK3tzSk_RHb0t9vwRPLhxEbHZZhnZ-TeDaLpAiABo3XVMv6XLfl0Y3KuVATi-xdNo0t4iQdw9R0XksV03Q

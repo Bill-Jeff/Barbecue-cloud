@@ -49,7 +49,8 @@
         <spring.boot.version>3.5.9</spring.boot.version>
         <mapstruct.version>1.6.3</mapstruct.version>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
-        <langchain4j.version>1.0.0-beta3</langchain4j.version>
+        <langchain4j.version>1.17.2</langchain4j.version>
+        <langchain4j.community.version>1.17.2-beta27</langchain4j.community.version>
     </properties>
 
     <dependencyManagement>
@@ -58,6 +59,22 @@
                 <groupId>com.bbq</groupId>
                 <artifactId>bbq-dependencies</artifactId>
                 <version>${revision}</version>
+                <type>pom</type>
+                <scope>import</scope>
+            </dependency>
+            <!-- langchain4j 官方 BOM：统一核心与 Spring Boot starter 版本 -->
+            <dependency>
+                <groupId>dev.langchain4j</groupId>
+                <artifactId>langchain4j-bom</artifactId>
+                <version>${langchain4j.version}</version>
+                <type>pom</type>
+                <scope>import</scope>
+            </dependency>
+            <!-- langchain4j 社区 BOM：community 模块（如 dashscope）滞后一个轨道，由该 BOM 映射到对应 beta 版本 -->
+            <dependency>
+                <groupId>dev.langchain4j</groupId>
+                <artifactId>langchain4j-community-bom</artifactId>
+                <version>${langchain4j.community.version}</version>
                 <type>pom</type>
                 <scope>import</scope>
             </dependency>

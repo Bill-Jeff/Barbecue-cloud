@@ -3,6 +3,8 @@ package com.bbq.module.flashsale.service;
 import cn.hutool.core.util.ObjectUtil;
 import com.bbq.module.flashsale.entity.Product;
 import org.springframework.ai.chat.client.ChatClient;
+import org.springframework.ai.rag.advisor.RetrievalAugmentationAdvisor;
+import org.springframework.ai.rag.retrieval.search.DocumentRetriever;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
@@ -16,10 +18,12 @@ public class AliAiChatService {
     private final ChatClient chatClient;
     private final PvService pvService;
     private final ProductService productService;
+    private final RetrievalAugmentationAdvisor ragAdvisor;
 
     public AliAiChatService(ChatClient.Builder builder,
                             PvService pvService,
-                            ProductService productService) {
+                            ProductService productService,
+                            DocumentRetriever documentRetriever) {
         this.pvService = pvService;
         this.productService = productService;
         this.chatClient = builder
@@ -36,6 +40,11 @@ public class AliAiChatService {
                        菜品名称必须和菜单中完全一致
                     """)
                 .build();
+        // RAG：从知识库（DashScope 托管向量索引 "bbq"）检索相关文档，注入提示词增强回答。
+        // 该 DocumentRetriever 由 RagConfig 提供；若索引为空则优雅降级（不注入任何文档）。
+        this.ragAdvisor = RetrievalAugmentationAdvisor.builder()
+                .documentRetriever(documentRetriever)
+                .build();
     }
 
     public String chat(String userInput) {
@@ -47,6 +56,7 @@ public class AliAiChatService {
             prompt = userInput;
         }
         return chatClient.prompt()
+                .advisors(ragAdvisor)
                 .user(prompt)
                 .call()
                 .content();

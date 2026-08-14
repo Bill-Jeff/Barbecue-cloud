@@ -140,19 +140,23 @@
         <dependency>
             <groupId>dev.langchain4j</groupId>
             <artifactId>langchain4j</artifactId>
-            <version>${langchain4j.version}</version>
         </dependency>
         <dependency>
             <groupId>dev.langchain4j</groupId>
             <artifactId>langchain4j-spring-boot-starter</artifactId>
-            <version>${langchain4j.version}</version> <!-- 推荐最新稳定版，可去Maven仓库更新 -->
         </dependency>
         <!-- 2. OpenAI 模型适配器（对接GPT-3.5/4，按需替换为其他模型） -->
         <dependency>
             <groupId>dev.langchain4j</groupId>
             <artifactId>langchain4j-community-dashscope-spring-boot-starter</artifactId>
-            <version>${langchain4j.version}</version>
         </dependency>
+        <!-- 说明：langchain4j-easy-rag 在 1.17.x 仅有 beta27 轨道且已废弃，其能力已由 core 的 EmbeddingStoreIngestor 覆盖，故移除 -->
+<!--        <dependency>-->
+<!--            <groupId>dev.langchain4j</groupId>-->
+<!--            <artifactId>langchain4j-agent-workflow</artifactId>-->
+<!--            <version>${langchain4j.version}</version>-->
+<!--        </dependency>-->
+
 
         <!-- 可选：Spring Web，用于编写测试接口 -->
         <dependency>
