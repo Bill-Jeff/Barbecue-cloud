@@ -4,6 +4,7 @@ import com.bbq.module.flashsale.config.Result;
 import com.bbq.module.flashsale.entity.Category;
 import com.bbq.module.flashsale.entity.Product;
 import com.bbq.module.flashsale.service.ProductService;
+import jakarta.annotation.security.PermitAll;
 import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -13,9 +14,11 @@ import org.springframework.web.bind.annotation.RestController;
 import java.util.List;
 import java.util.Map;
 
+/** 菜品/分类浏览：免登录 */
 @RestController
 @RequestMapping("/flashsale/api")
 @RequiredArgsConstructor
+@PermitAll
 public class ProductController {
 
     private final ProductService productService;

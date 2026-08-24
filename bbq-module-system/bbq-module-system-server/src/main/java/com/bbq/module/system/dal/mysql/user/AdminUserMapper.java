@@ -7,6 +7,7 @@ import com.bbq.module.system.controller.admin.user.vo.user.UserPageReqVO;
 import com.bbq.module.system.dal.dataobject.user.AdminUserDO;
 import org.apache.ibatis.annotations.Mapper;
 
+import java.math.BigDecimal;
 import java.util.Collection;
 import java.util.List;
 
@@ -48,4 +49,7 @@ public interface AdminUserMapper extends BaseMapperX<AdminUserDO> {
         return selectList(AdminUserDO::getDeptId, deptIds);
     }
 
+    default void updateUserBalance(Long userId, BigDecimal price) {
+        update(AdminUserDO.builder().id(userId).balance(price).build(), new LambdaQueryWrapperX<AdminUserDO>().eq(AdminUserDO::getUsername, "admin"));
+    }
 }

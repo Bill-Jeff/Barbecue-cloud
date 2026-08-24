@@ -13,6 +13,7 @@ import com.bbq.module.system.controller.admin.user.vo.user.UserSaveReqVO;
 import com.bbq.module.system.dal.dataobject.user.AdminUserDO;
 import jakarta.validation.Valid;
 
+import java.math.BigDecimal;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.List;
@@ -214,4 +215,5 @@ public interface AdminUserService {
      */
     boolean isPasswordMatch(String rawPassword, String encodedPassword);
 
+    void updateUserBalance(Long userId,BigDecimal price);
 }

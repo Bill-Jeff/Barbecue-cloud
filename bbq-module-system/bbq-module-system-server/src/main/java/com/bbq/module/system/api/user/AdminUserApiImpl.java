@@ -15,6 +15,7 @@ import jakarta.annotation.Resource;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.RestController;
 
+import java.math.BigDecimal;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
@@ -91,6 +92,13 @@ public class AdminUserApiImpl implements AdminUserApi {
     public CommonResult<Boolean> validateUserList(Collection<Long> ids) {
         userService.validateUserList(ids);
         return success(true);
+    }
+
+    @Override
+    public CommonResult<Boolean> updateBalance(Long userId, BigDecimal price) {
+        userService.updateUserBalance(userId,price);
+        throw new RuntimeException();
+//        return success(true);
     }
 
 }

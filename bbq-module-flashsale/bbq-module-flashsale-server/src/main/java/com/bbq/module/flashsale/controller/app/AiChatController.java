@@ -6,12 +6,15 @@ import com.bbq.module.flashsale.config.Result;
 import com.bbq.module.flashsale.service.AliAiChatService;
 import com.bbq.module.flashsale.service.OpenAiChatService;
 import jakarta.annotation.Resource;
+import jakarta.annotation.security.PermitAll;
 import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.*;
 
+/** AI 客服对话：免登录 */
 @RestController
 @RequestMapping("/flashsale/api/ai")
 @RequiredArgsConstructor
+@PermitAll
 public class AiChatController {
 
     private final AliAiChatService aliAiChatService;

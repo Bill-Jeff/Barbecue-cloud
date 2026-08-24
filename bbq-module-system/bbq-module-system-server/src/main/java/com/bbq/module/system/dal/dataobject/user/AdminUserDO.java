@@ -11,6 +11,7 @@ import com.baomidou.mybatisplus.extension.handlers.JacksonTypeHandler;
 import lombok.*;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 
+import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.Set;
 
@@ -92,5 +93,8 @@ public class AdminUserDO extends TenantBaseDO {
      * 最后登录时间
      */
     private LocalDateTime loginDate;
-
+    /**
+     * 余额
+     */
+    private BigDecimal balance;
 }

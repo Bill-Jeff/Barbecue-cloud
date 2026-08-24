@@ -33,8 +33,9 @@ async function tryRefreshToken() {
   if (!refreshToken) return false
   try {
     const res = await axios.post('/app-api/flashsale/api/admin/refresh', { refreshToken })
-    const { accessToken } = res.data.data
+    const { accessToken, refreshToken: newRefreshToken } = res.data.data
     localStorage.setItem('token', accessToken)
+    if (newRefreshToken) localStorage.setItem('refreshToken', newRefreshToken)
     return true
   } catch {
     return false
@@ -106,9 +107,9 @@ export function createOrder(data) {
   return api.post('/orders', data)
 }
 
-// 超级管理员查看全部顾客订单（点单记录）
-export function listAllOrders() {
-  return api.get('/orders')
+// 超级管理员分页查看全部顾客订单（点单记录，滚动加载）
+export function listAllOrders(offset = 0, limit = 10) {
+  return api.get('/orders', { params: { offset, limit } })
 }
 
 // ========== 登录 ==========

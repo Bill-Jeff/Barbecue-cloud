@@ -27,7 +27,8 @@ public class SecurityConfiguration {
                 // Spring Boot Actuator 的安全配置
                 registry.requestMatchers("/actuator").permitAll()
                         .requestMatchers("/actuator/**").permitAll();
-                registry.requestMatchers("/app-api/**").permitAll();
+                // 注意：不再整体放行 /app-api/**。公开接口通过 @PermitAll 注解免登录，
+                // 管理接口通过 @PreAuthorize("@ss.hasRole('super_admin')") 做权限校验。
 
                 // TODO 芋艿：这个每个项目都需要重复配置，得捉摸有没通用的方案
                 // RPC 服务的安全配置

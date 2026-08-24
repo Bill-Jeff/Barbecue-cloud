@@ -1,5 +1,7 @@
 package com.bbq.module.flashsale.consumer;
 
+import com.bbq.framework.mq.rabbitmq.config.BbqRabbitMQAutoConfiguration;
+import com.bbq.framework.security.core.util.SecurityFrameworkUtils;
 import com.bbq.module.flashsale.config.RabbitMQConfig;
 import com.bbq.module.flashsale.entity.FlashSaleOrderMessage;
 import com.bbq.module.flashsale.entity.OrderInfo;
@@ -8,6 +10,7 @@ import com.bbq.module.flashsale.mapper.FlashSaleMapper;
 import com.bbq.module.flashsale.mapper.OrderItemMapper;
 import com.bbq.module.flashsale.mapper.OrderMapper;
 import com.bbq.module.flashsale.service.FlashSaleRedisService;
+import com.bbq.module.system.api.user.AdminUserApi;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.amqp.rabbit.annotation.RabbitListener;
@@ -25,8 +28,9 @@ public class FlashSaleOrderConsumer {
     private final OrderItemMapper orderItemMapper;
     private final FlashSaleMapper flashSaleMapper;
     private final FlashSaleRedisService flashSaleRedisService;
+    private final AdminUserApi adminUserApi;
 
-    @RabbitListener(queues = RabbitMQConfig.FLASH_SALE_QUEUE)
+    @RabbitListener(queues = BbqRabbitMQAutoConfiguration.FLASH_SALE_QUEUE)
     @Transactional(rollbackFor = Exception.class)
     public void onMessage(FlashSaleOrderMessage msg) {
         log.info("收到秒杀订单消息: {}", msg);
@@ -55,6 +59,8 @@ public class FlashSaleOrderConsumer {
         item.setQuantity(msg.getQuantity());
         orderItemMapper.insert(item);
 
+        //3 更新余额
+//        adminUserApi.updateBalance(SecurityFrameworkUtils.getLoginUserId(), msg.getPrice());
         log.info("秒杀订单创建成功: orderId={}", orderInfo.getId());
     }
 }

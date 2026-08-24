@@ -42,6 +42,7 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.*;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -537,6 +538,11 @@ public class AdminUserServiceImpl implements AdminUserService {
     @Override
     public boolean isPasswordMatch(String rawPassword, String encodedPassword) {
         return passwordEncoder.matches(rawPassword, encodedPassword);
+    }
+
+    @Override
+    public void updateUserBalance(Long userId,BigDecimal price) {
+        userMapper.updateUserBalance(userId,price);
     }
 
     /**

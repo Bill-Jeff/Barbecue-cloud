@@ -36,8 +36,7 @@ public class MySqlEmbeddingStore implements EmbeddingStore<TextSegment> {
     }
 
     private void initTable() {
-        try (Connection conn = dataSource.getConnection();
-             Statement st = conn.createStatement()) {
+        try (Connection conn = dataSource.getConnection(); Statement st = conn.createStatement()) {
             st.execute("CREATE TABLE IF NOT EXISTS " + table + " ("
                     + "id VARCHAR(36) PRIMARY KEY, "
                     + "embedding TEXT NOT NULL, "
@@ -128,7 +127,7 @@ public class MySqlEmbeddingStore implements EmbeddingStore<TextSegment> {
                     TextSegment seg = TextSegment.from(
                             rs.getString("content"),
                             parseMeta(rs.getString("metadata")));
-                    matches.add(new EmbeddingMatch(score, rs.getString("id"), Embedding.from(vec), seg));
+                    matches.add(new EmbeddingMatch<>(score, rs.getString("id"), Embedding.from(vec), seg));
                 }
             }
         } catch (Exception e) {
@@ -172,7 +171,9 @@ public class MySqlEmbeddingStore implements EmbeddingStore<TextSegment> {
             na += a[i] * a[i];
             nb += b[i] * b[i];
         }
-        if (na == 0 || nb == 0) return 0;
+        if (na == 0 || nb == 0) {
+            return 0;
+        }
         return dot / (Math.sqrt(na) * Math.sqrt(nb));
     }
 

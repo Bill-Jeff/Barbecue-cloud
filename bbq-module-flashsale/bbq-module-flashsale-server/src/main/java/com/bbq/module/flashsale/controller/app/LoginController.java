@@ -7,7 +7,9 @@ import com.bbq.module.system.api.auth.dto.AuthLoginReqDTO;
 import com.bbq.module.system.api.auth.dto.AuthLoginRespDTO;
 import com.bbq.module.system.api.user.AdminUserApi;
 import com.bbq.module.system.api.user.dto.AdminUserRespDTO;
+import jakarta.annotation.security.PermitAll;
 import lombok.RequiredArgsConstructor;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 import com.bbq.framework.common.pojo.CommonResult;
 
@@ -23,12 +25,14 @@ public class LoginController {
     private final PermissionCommonApi permissionApi;
 
     @PostMapping("/login")
+    @PermitAll
     public CommonResult<Map<String, Object>> login(@RequestBody AuthLoginReqDTO body) {
         CommonResult<AuthLoginRespDTO> result = authApi.login(body);
         AuthLoginRespDTO auth = result.getData();
 
         Map<String, Object> map = new LinkedHashMap<>();
         map.put("userId", auth.getUserId());
+        // 采用 yudao 标准的 OAuth2 token（由系统模块签发，网关透传 login-user 头校验）
         map.put("accessToken", auth.getAccessToken());
         map.put("refreshToken", auth.getRefreshToken());
         map.put("expiresTime", auth.getExpiresTime());
@@ -52,16 +56,21 @@ public class LoginController {
     }
 
     /**
-     * 刷新 accessToken
+     * 刷新 accessToken（yudao 标准：调用系统模块的刷新接口）
+     *
+     * 注意：前端通过 JSON body 传 refreshToken，因此这里用 @RequestBody 接收。
      */
     @PostMapping("/refresh")
-    public CommonResult<AuthLoginRespDTO> refreshToken(@RequestParam("refreshToken") String refreshToken) {
-        return authApi.refresh(refreshToken);
+    @PermitAll
+    public CommonResult<AuthLoginRespDTO> refresh(@RequestBody Map<String, String> body) {
+        return authApi.refresh(body.get("refreshToken"));
     }
 
     // ========== 用户管理 ==========
 
+    /** 用户列表：仅超级管理员 */
     @GetMapping("/users")
+    @PreAuthorize("@ss.hasRole('super_admin')")
     public CommonResult<List<AdminUserRespDTO>> listUsers() {
         List<Long> userIds = List.of(1L);
         return userApi.getUserList(userIds);

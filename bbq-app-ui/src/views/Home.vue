@@ -165,9 +165,9 @@
     <div v-show="activeTab === 1" class="page">
       <div class="section-title">
         <h2>点单记录</h2>
-        <span class="section-hint">{{ role === 'admin' ? '全部顾客订单 · ' + orders.length + ' 笔' : orders.length + ' 笔订单' }}</span>
+        <span class="section-hint">{{ role === 'admin' ? '全部顾客订单 · ' + orderTotal + ' 笔' : orders.length + ' 笔订单' }}</span>
       </div>
-      <div v-if="orders.length === 0" class="empty-state">
+      <div v-if="orders.length === 0 && !orderLoading" class="empty-state">
         <div class="empty-icon">
           <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" opacity="0.3"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>
         </div>
@@ -192,6 +192,12 @@
             </div>
           </div>
         </div>
+      </div>
+      <!-- 滚动加载哨兵：进入视口时加载下一页（仅管理员分页场景） -->
+      <div v-if="role === 'admin'" v-show="orders.length > 0 || orderLoading || orderHasMore" id="order-list-sentinel" class="order-sentinel">
+        <span v-if="orderLoading">加载中…</span>
+        <span v-else-if="orderHasMore">继续上滑加载更多</span>
+        <span v-else-if="orders.length > 0">— 已加载全部 {{ orderTotal }} 笔 —</span>
       </div>
     </div>
 
@@ -292,7 +298,7 @@
 </template>
 
 <script setup>
-import { ref, computed, onMounted, onUnmounted, watch, h } from 'vue'
+import { ref, computed, onMounted, onUnmounted, watch, nextTick, h } from 'vue'
 import { useRouter } from 'vue-router'
 import { getCategories, getProducts, getFlashSales, getHotProducts, listAllOrders } from '../api'
 import { getFoodImage } from '../utils/foodImages'
@@ -338,6 +344,15 @@ const products = ref([])
 const orders = ref([])
 const hotProducts = ref([])
 const hotLoading = ref(false)
+
+// ===== 管理员订单滚动加载相关状态 =====
+const ORDER_PAGE_SIZE = 10
+const orderTotal = ref(0)      // 后端返回的总记录数
+const orderHasMore = ref(false) // 是否还有下一页
+const orderLoading = ref(false) // 是否正在请求
+let orderOffset = 0             // 当前已加载的偏移量
+let orderReqSeq = 0             // 请求序号，用于丢弃过期的响应
+let orderObserver = null        // 滚动加载哨兵观察器
 
 const isLoggedIn = ref(false)
 const nickname = ref('')
@@ -397,12 +412,24 @@ function getQty(productId) {
   return item ? item.quantity : 0
 }
 
-function loadOrders() {
+function loadOrders(reset = true) {
   if (role.value === 'admin') {
-    // 超级管理员：从后端拉取全部顾客订单
-    listAllOrders()
+    // 超级管理员：从后端分页拉取全部顾客订单（滚动加载）
+    if (reset) {
+      orders.value = []
+      orderOffset = 0
+      orderTotal.value = 0
+      orderHasMore.value = true
+      orderReqSeq++ // 使在途请求过期
+    }
+    if (orderLoading.value || !orderHasMore.value) return
+    orderLoading.value = true
+    const seq = orderReqSeq
+    listAllOrders(orderOffset, ORDER_PAGE_SIZE)
       .then(res => {
-        orders.value = (res.data || []).map(o => ({
+        if (seq !== orderReqSeq) return // 已被重置覆盖，丢弃过期响应
+        const data = res.data || {}
+        const mapped = (data.list || []).map(o => ({
           id: o.id,
           tableNo: o.tableNo,
           total: Number(o.totalAmount) || 0,
@@ -414,13 +441,45 @@ function loadOrders() {
             quantity: i.quantity,
           })),
         }))
+        orders.value.push(...mapped)
+        orderTotal.value = Number(data.total) || 0
+        orderHasMore.value = Boolean(data.hasMore)
+        orderOffset += mapped.length
       })
-      .catch(() => { orders.value = [] })
+      .catch(() => { if (seq === orderReqSeq) orders.value = [] })
+      .finally(() => {
+        orderLoading.value = false
+        // 若期间发生了重置，则补拉最新一页
+        if (seq !== orderReqSeq) { loadOrders(false); return }
+        // 首页/某页数据不足以填满屏幕时，继续加载直到出现滚动或没有更多
+        if (orderHasMore.value && sentinelVisible()) loadOrders(false)
+      })
   } else {
     // 普通用户：仅查看本机本地订单
     try { orders.value = JSON.parse(localStorage.getItem('shaokao_orders') || '[]') }
     catch { orders.value = [] }
   }
+}
+
+// 滚动加载哨兵是否接近视口底部（rootMargin 300px 与 IntersectionObserver 保持一致）
+function sentinelVisible() {
+  const el = document.getElementById('order-list-sentinel')
+  if (!el) return false
+  const rect = el.getBoundingClientRect()
+  return rect.top <= window.innerHeight + 300
+}
+
+function setupOrderObserver() {
+  if (orderObserver) {
+    orderObserver.disconnect()
+    orderObserver = null
+  }
+  const sentinel = document.getElementById('order-list-sentinel')
+  if (!sentinel) return
+  orderObserver = new IntersectionObserver((entries) => {
+    if (entries[0] && entries[0].isIntersecting) loadOrders(false)
+  }, { rootMargin: '300px 0px' })
+  orderObserver.observe(sentinel)
 }
 
 // 兼容后端 LocalDateTime 的多种序列化形式（字符串 / 数组）
@@ -499,15 +558,20 @@ onMounted(async () => {
     updateFlashCountdown()
     flashTimer = setInterval(updateFlashCountdown, 1000)
   }
+  nextTick(setupOrderObserver)
 })
 
 watch(activeTab, (val) => {
-  if (val === 1) loadOrders()
+  if (val === 1) {
+    loadOrders(true)
+    nextTick(setupOrderObserver)
+  }
   else if (val === 2) loadHotProducts()
 })
 
 onUnmounted(() => {
   if (flashTimer) clearInterval(flashTimer)
+  if (orderObserver) orderObserver.disconnect()
 })
 </script>
 
@@ -1202,6 +1266,14 @@ onUnmounted(() => {
 .oi-name { flex: 1; font-weight: 500; color: var(--text); }
 .oi-qty { color: var(--muted-soft); font-size: 12px; }
 .oi-price { color: var(--accent-bright); font-weight: 700; min-width: 60px; text-align: right; }
+
+/* 滚动加载哨兵 */
+.order-sentinel {
+  padding: 18px 0 8px;
+  text-align: center;
+  font-size: 12px;
+  color: var(--muted-soft);
+}
 
 /* ===== Empty state ===== */
 .empty-state {

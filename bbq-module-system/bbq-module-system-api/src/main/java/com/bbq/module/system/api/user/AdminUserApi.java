@@ -15,6 +15,7 @@ import org.springframework.cloud.openfeign.FeignClient;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 
+import java.math.BigDecimal;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
@@ -93,4 +94,7 @@ public interface AdminUserApi extends AutoTransable<AdminUserRespDTO> {
         return getUser(Convert.toLong(id)).getCheckedData();
     }
 
+    @GetMapping(PREFIX + "/update-price")
+    @Operation(summary = "修改余额")
+    CommonResult<Boolean> updateBalance(@RequestParam("userId") Long userId,@RequestParam("price")BigDecimal price);
 }

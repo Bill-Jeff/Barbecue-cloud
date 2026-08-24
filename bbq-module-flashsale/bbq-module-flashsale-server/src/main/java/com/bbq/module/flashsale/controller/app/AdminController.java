@@ -5,6 +5,7 @@ import com.bbq.module.flashsale.entity.Category;
 import com.bbq.module.flashsale.entity.Product;
 import com.bbq.module.flashsale.service.ProductService;
 import lombok.RequiredArgsConstructor;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
@@ -20,6 +21,8 @@ import java.util.UUID;
 @RestController
 @RequestMapping("/flashsale/api/admin")
 @RequiredArgsConstructor
+// 管理后台全部接口：仅超级管理员可访问（yudao 标准鉴权）
+@PreAuthorize("@ss.hasRole('super_admin')")
 public class AdminController {
 
     private final ProductService productService;
