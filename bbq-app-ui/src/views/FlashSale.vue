@@ -30,15 +30,26 @@
             </div>
             <div class="sale-meta">
               <span class="meta-stock">剩余 {{ sale.count }} 件</span>
-              <van-button
-                type="danger"
-                size="small"
-                round
-                :disabled="sale.count <= 0"
-                @click="openBuyDialog(sale)"
-              >
-                {{ sale.count > 0 ? '立即抢购' : '已抢光' }}
-              </van-button>
+              <div class="sale-actions">
+                <van-button
+                  type="danger"
+                  size="small"
+                  round
+                  :disabled="sale.count <= 0"
+                  @click="openBuyDialog(sale)"
+                >
+                  {{ sale.count > 0 ? '立即抢购' : '已抢光' }}
+                </van-button>
+                <van-button
+                  type="primary"
+                  size="small"
+                  round
+                  plain
+                  @click="buyNow(sale)"
+                >
+                  立即购买
+                </van-button>
+              </div>
             </div>
             <div class="countdown-row">
               <div class="countdown">
@@ -84,8 +95,10 @@ import { ref, reactive, onMounted, onUnmounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { showToast } from 'vant'
 import { getFlashSales, createFlashSaleOrder } from '../api'
+import { useCartStore } from '../stores/cart'
 
 const router = useRouter()
+const cart = useCartStore()
 const sales = ref([])
 const countdowns = ref({})
 let timer = null
@@ -102,6 +115,15 @@ function openBuyDialog(sale) {
   buyDialog.sale = sale
   buyDialog.quantity = 1
   buyDialog.visible = true
+}
+
+function buyNow(sale) {
+  cart.addItem({
+    id: sale.productId,
+    name: sale.productName,
+    price: Number(sale.originalPrice || sale.price || 0),
+  })
+  router.push('/cart')
 }
 
 async function submitFlashOrder() {
@@ -273,6 +295,11 @@ onUnmounted(() => {
   justify-content: space-between;
   align-items: center;
   margin-top: 4px;
+}
+.sale-actions {
+  display: flex;
+  align-items: center;
+  gap: 6px;
 }
 .countdown-row {
   display: flex;

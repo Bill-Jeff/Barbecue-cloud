@@ -23,7 +23,7 @@ public class OrderService {
     private final OrderMapper orderMapper;
     private final OrderItemMapper orderItemMapper;
 
-    @Transactional
+    @Transactional(rollbackFor = Exception.class)
     public Long createOrder(OrderInfo orderInfo) {
         List<OrderItem> items = orderInfo.getItems();
 
