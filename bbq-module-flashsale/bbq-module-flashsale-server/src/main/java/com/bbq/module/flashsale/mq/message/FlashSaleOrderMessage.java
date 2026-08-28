@@ -1,4 +1,4 @@
-package com.bbq.module.flashsale.entity;
+package com.bbq.module.flashsale.mq.message;
 
 import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.Data;
@@ -8,7 +8,10 @@ import java.math.BigDecimal;
 @Data
 public class FlashSaleOrderMessage {
 
-    @Schema(description = "订单ID")
+    @Schema(description = "下单请求ID，由生产者预生成，用作消费幂等键")
+    private String requestId;
+
+    @Schema(description = "秒杀活动ID")
     private Long flashSaleId;
 
     @Schema(description = "食品ID")

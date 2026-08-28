@@ -1,11 +1,16 @@
 package com.bbq.module.flashsale.service;
 
+import cn.hutool.core.date.DateUnit;
+import cn.hutool.core.date.DateUtil;
 import com.gitee.apanlh.util.base.MapUtils;
 import com.bbq.module.flashsale.config.RedisConfig;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.stereotype.Service;
 
+import java.math.BigDecimal;
+import java.time.Duration;
+import java.time.LocalDateTime;
 import java.util.Map;
 
 /**
@@ -24,11 +29,12 @@ public class FlashSaleRedisService {
      * @param flashSaleId 秒杀活动ID
      * @param count       初始库存数量
      */
-    public void initStock(Long flashSaleId, int count) {
+    public void initStock(Long flashSaleId, int count, LocalDateTime saleTime) {
+        long seconds = Math.abs(Duration.between(LocalDateTime.now(), saleTime).getSeconds());
         // 设置库存数量到 Redis
-        RedisConfig.STOCK_KEY_PREFIX.set(String.valueOf(flashSaleId), count);
+        RedisConfig.STOCK_KEY_PREFIX.setForSeconds(String.valueOf(flashSaleId), count,seconds);
         // 设置已售数量为 0 到 Redis
-        RedisConfig.SOLD_KEY_PREFIX.set(String.valueOf(flashSaleId), 0);
+        RedisConfig.SOLD_KEY_PREFIX.setForSeconds(String.valueOf(flashSaleId), 0,seconds);
     }
 
     /**
@@ -52,7 +58,7 @@ public class FlashSaleRedisService {
     public void incrementStock(Long flashSaleId, int quantity) {
         String id = String.valueOf(flashSaleId);
         RedisConfig.STOCK_KEY_PREFIX.increment(id, quantity);
-        RedisConfig.SOLD_KEY_PREFIX.increment( id, quantity);
+        RedisConfig.SOLD_KEY_PREFIX.decrement(id, quantity);
     }
 
     /**
@@ -71,10 +77,10 @@ public class FlashSaleRedisService {
     /**
      * 缓存秒杀活动信息到 Redis Hash，下单时不需要查 DB
      */
-    public void cacheFlashSaleInfo(Long flashSaleId, Long productId, Integer price, String productName) {
+    public void cacheFlashSaleInfo(Long flashSaleId, Long productId, BigDecimal price, String productName) {
         Map<String, Object> map = MapUtils.newHashMap( item -> {
             item.put("productId", String.valueOf(productId));
-            item.put("price", String.valueOf(price));
+            item.put("price", price.toPlainString());
             item.put("productName", productName);
         });
 //        RedisConfig.INFO_KEY_PREFIX.set(String.valueOf(flashSaleId), map);

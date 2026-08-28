@@ -35,6 +35,8 @@ public interface FlashSaleMapper extends MPJBaseMapper<FlashSale> {
                         .orderByAsc(FlashSale::getSaleTime));
     }
 
-    @Update("UPDATE flash_sale SET count = count - #{quantity} WHERE product_id = #{productId} AND count >= #{quantity}")
-    int decrementStock(@Param("productId") Long productId, @Param("quantity") int quantity);
+    @Update("UPDATE flash_sale SET count = count - #{quantity} WHERE id = #{flashSaleId} AND product_id = #{productId} AND count >= #{quantity}")
+    int decrementStock(@Param("flashSaleId") Long flashSaleId,
+                       @Param("productId") Long productId,
+                       @Param("quantity") int quantity);
 }

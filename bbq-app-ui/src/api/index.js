@@ -33,7 +33,13 @@ async function tryRefreshToken() {
   if (!refreshToken) return false
   try {
     const res = await axios.post('/app-api/flashsale/api/admin/refresh', { refreshToken })
-    const { accessToken, refreshToken: newRefreshToken } = res.data.data
+    const body = res.data
+    // 后端返回 Result 包装：code 非 0/200 视为刷新失败
+    if (body && typeof body.code === 'number' && body.code !== 0 && body.code !== 200) {
+      return false
+    }
+    const { accessToken, refreshToken: newRefreshToken } = body?.data || {}
+    if (!accessToken) return false
     localStorage.setItem('token', accessToken)
     if (newRefreshToken) localStorage.setItem('refreshToken', newRefreshToken)
     return true
@@ -42,9 +48,40 @@ async function tryRefreshToken() {
   }
 }
 
+// 统一处理 401（HTTP 401 或业务 code 401）：刷新 token 并重试，只重试一次
+async function handle401(config) {
+  if (!config || config._retry) return false
+  config._retry = true
+  if (!isRefreshing) {
+    isRefreshing = true
+    const success = await tryRefreshToken()
+    isRefreshing = false
+    if (success) {
+      // 放行排队中的请求
+      refreshQueue.forEach(resolve => resolve(true))
+      refreshQueue = []
+      config.headers.Authorization = `Bearer ${localStorage.getItem('token')}`
+      return true
+    }
+    // 刷新失败：让排队请求结束，清空登录态跳登录页
+    refreshQueue.forEach(resolve => resolve(false))
+    refreshQueue = []
+    localStorage.removeItem('token')
+    localStorage.removeItem('refreshToken')
+    if (window.location.pathname !== '/login') {
+      window.location.href = '/login'
+    }
+    return false
+  }
+  // 已有刷新在进行中，排队等待结果
+  return new Promise(resolve => {
+    refreshQueue.push(resolve)
+  })
+}
+
 // 响应拦截器：Result 解包 + 异常处理
 api.interceptors.response.use(
-  res => {
+  async res => {
     const body = res.data
     if (body && typeof body.code === 'number') {
       if (body.code === 0 || body.code === 200) {
@@ -52,42 +89,26 @@ api.interceptors.response.use(
         res.code = body.code
         return res
       }
-      toastError(body.message)
-      return Promise.reject(new Error(body.message))
+      // 业务层 401（HTTP 200 + code 401「账号未登录」）：自动刷新 token 并重试一次
+      if (body.code === 401) {
+        const ok = await handle401(res.config)
+        if (ok) return api(res.config)
+        return Promise.reject(new Error(body.msg || body.message || '账号未登录'))
+      }
+      toastError(body.msg || body.message)
+      return Promise.reject(new Error(body.msg || body.message))
     }
     return res
   },
   async err => {
     const { config, response } = err
-    if (response?.status === 401 && !config._retry) {
-      config._retry = true
-      if (!isRefreshing) {
-        isRefreshing = true
-        const success = await tryRefreshToken()
-        isRefreshing = false
-        if (success) {
-          // 重试队列中的请求
-          refreshQueue.forEach(cb => cb())
-          refreshQueue = []
-          // 重试当前请求
-          config.headers.Authorization = `Bearer ${localStorage.getItem('token')}`
-          return api(config)
-        }
-        // 刷新失败，清空登录态
-        localStorage.removeItem('token')
-        localStorage.removeItem('refreshToken')
-        window.location.href = '/login'
-        return Promise.reject(err)
-      }
-      // 等待刷新完成
-      return new Promise(resolve => {
-        refreshQueue.push(() => {
-          config.headers.Authorization = `Bearer ${localStorage.getItem('token')}`
-          resolve(api(config))
-        })
-      })
+    // HTTP 层 401：同样走刷新重试
+    if (response?.status === 401) {
+      const ok = await handle401(config)
+      if (ok) return api(config)
+      return Promise.reject(err)
     }
-    const msg = response?.data?.message || err.message || '请求失败'
+    const msg = response?.data?.msg || response?.data?.message || err.message || '请求失败'
     toastError(msg)
     return Promise.reject(err)
   }

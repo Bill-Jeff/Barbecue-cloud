@@ -12,7 +12,7 @@ import java.util.ArrayList;
 import java.util.Random;
 
 @SpringBootTest(classes = FlashSaleApplication.class)
-public class OrderServiceTest {
+public class OrderInfoServiceTest {
     private static final Random random = new Random();
     private static final int CHINESE_START = 0x4E00;
     private static final int CHINESE_END = 0x9FFF;

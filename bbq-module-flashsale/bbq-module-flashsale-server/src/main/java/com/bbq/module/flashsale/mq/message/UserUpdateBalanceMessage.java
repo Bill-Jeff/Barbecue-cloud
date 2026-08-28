@@ -1,2 +1,9 @@
-package com.bbq.module.flashsale.mq.message;public class UserUpdateBalanceMessage {
+package com.bbq.module.flashsale.mq.message;
+
+import lombok.Data;
+
+@Data
+public class UserUpdateBalanceMessage {
+
+    private Long orderId;
 }

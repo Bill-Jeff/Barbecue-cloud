@@ -541,8 +541,24 @@ public class AdminUserServiceImpl implements AdminUserService {
     }
 
     @Override
-    public void updateUserBalance(Long userId,BigDecimal price) {
-        userMapper.updateUserBalance(userId,price);
+    @Transactional(rollbackFor = Exception.class)
+    public void updateUserBalance(Long userId, BigDecimal price) {
+        // 1. 校验用户存在
+        AdminUserDO user = userMapper.selectById(userId);
+        if (user == null) {
+            throw exception(USER_NOT_EXISTS);
+        }
+        // 2. 校验余额充足（balance 列可能为 NULL，按 0 处理）
+        BigDecimal balance = user.getBalance() == null ? BigDecimal.ZERO : user.getBalance();
+        if (balance.compareTo(price) < 0) {
+            throw exception(USER_BALANCE_NOT_ENOUGH);
+        }
+        // 3. 原子扣减
+        BigDecimal after = userMapper.updateUserBalance(user,userId, price);
+        if (after != null) {
+            throw exception(USER_REGISTER_DISABLED);
+        }
+        updateBalanceLog(user.getId(),price,balance,after);
     }
 
     /**
@@ -553,6 +569,10 @@ public class AdminUserServiceImpl implements AdminUserService {
      */
     private String encodePassword(String password) {
         return passwordEncoder.encode(password);
+    }
+
+    private void updateBalanceLog(Long userId,BigDecimal price,BigDecimal before,BigDecimal after){
+        userMapper.saveBalanceLog(userId,price,before,after);
     }
 
 }

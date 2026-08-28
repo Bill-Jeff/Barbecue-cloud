@@ -5,7 +5,9 @@ import com.bbq.framework.mybatis.core.mapper.BaseMapperX;
 import com.bbq.framework.mybatis.core.query.LambdaQueryWrapperX;
 import com.bbq.module.system.controller.admin.user.vo.user.UserPageReqVO;
 import com.bbq.module.system.dal.dataobject.user.AdminUserDO;
+import org.apache.ibatis.annotations.Insert;
 import org.apache.ibatis.annotations.Mapper;
+import org.apache.ibatis.annotations.Param;
 
 import java.math.BigDecimal;
 import java.util.Collection;
@@ -49,7 +51,12 @@ public interface AdminUserMapper extends BaseMapperX<AdminUserDO> {
         return selectList(AdminUserDO::getDeptId, deptIds);
     }
 
-    default void updateUserBalance(Long userId, BigDecimal price) {
-        update(AdminUserDO.builder().id(userId).balance(price).build(), new LambdaQueryWrapperX<AdminUserDO>().eq(AdminUserDO::getUsername, "admin"));
+    default BigDecimal updateUserBalance(AdminUserDO adminUser,Long userId, BigDecimal price) {
+        BigDecimal after = adminUser.getBalance().subtract(price);
+        update(AdminUserDO.builder().id(userId).balance(after).build(), new LambdaQueryWrapperX<AdminUserDO>().eq(AdminUserDO::getUsername, "admin"));
+        return after;
     }
+
+    @Insert("INSERT INTO system_user_balance_log (user_id, consume, before_balance, after_balance) VALUES (#{userId}, #{price}, #{before}, #{after})")
+    void saveBalanceLog(@Param("userId") Long userId,@Param("price") BigDecimal price,@Param("before") BigDecimal before,@Param("after") BigDecimal after);
 }

@@ -1,9 +1,9 @@
 package com.bbq.module.flashsale.controller.app;
 
-import com.bbq.module.flashsale.config.PageResult;
+import com.bbq.framework.common.pojo.PageResult;
 import com.bbq.module.flashsale.config.Result;
 import com.bbq.module.flashsale.entity.OrderInfo;
-import com.bbq.module.flashsale.service.OrderService;
+import com.bbq.module.flashsale.service.OrderInfoService;
 import jakarta.annotation.security.PermitAll;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.access.prepost.PreAuthorize;
@@ -21,13 +21,13 @@ import java.util.Map;
 @RequiredArgsConstructor
 public class OrderController {
 
-    private final OrderService orderService;
+    private final OrderInfoService orderInfoService;
 
     /** 顾客下单：免登录（yudao @PermitAll） */
     @PostMapping
     @PermitAll
     public Result<Map<String, Object>> createOrder(@RequestBody OrderInfo orderInfo) {
-        Long orderId = orderService.createOrder(orderInfo);
+        Long orderId = orderInfoService.createOrder(orderInfo);
         return Result.success(Map.of("id", orderId));
     }
 
@@ -44,6 +44,6 @@ public class OrderController {
             @RequestParam(defaultValue = "10") int limit) {
         int safeOffset = Math.max(offset, 0);
         int safeLimit = Math.min(Math.max(limit, 1), 100);
-        return Result.success(orderService.listOrders(safeOffset, safeLimit));
+        return Result.success(orderInfoService.listOrders(safeOffset, safeLimit));
     }
 }

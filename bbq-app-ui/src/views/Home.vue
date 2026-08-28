@@ -350,7 +350,7 @@ const ORDER_PAGE_SIZE = 10
 const orderTotal = ref(0)      // 后端返回的总记录数
 const orderHasMore = ref(false) // 是否还有下一页
 const orderLoading = ref(false) // 是否正在请求
-let orderOffset = 0             // 当前已加载的偏移量
+let orderOffset = 0             // 下一次请求的偏移量
 let orderReqSeq = 0             // 请求序号，用于丢弃过期的响应
 let orderObserver = null        // 滚动加载哨兵观察器
 
@@ -414,7 +414,7 @@ function getQty(productId) {
 
 function loadOrders(reset = true) {
   if (role.value === 'admin') {
-    // 超级管理员：从后端分页拉取全部顾客订单（滚动加载）
+    // 超级管理员：从后端分页拉取全部顾客订单（纯滚动驱动）
     if (reset) {
       orders.value = []
       orderOffset = 0
@@ -442,31 +442,26 @@ function loadOrders(reset = true) {
           })),
         }))
         orders.value.push(...mapped)
-        orderTotal.value = Number(data.total) || 0
-        orderHasMore.value = Boolean(data.hasMore)
         orderOffset += mapped.length
+        orderTotal.value = Number(data.total) || 0
+        // 后端 PageResult 只有 list/total，没有 hasMore。
+        orderHasMore.value = mapped.length > 0 && orderOffset < orderTotal.value
       })
-      .catch(() => { if (seq === orderReqSeq) orders.value = [] })
+      .catch(() => {
+        if (seq !== orderReqSeq) return
+        // 仅首屏失败时清空展示，后续翻页失败保留已加载数据
+        if (orders.value.length === 0) orders.value = []
+      })
       .finally(() => {
         orderLoading.value = false
-        // 若期间发生了重置，则补拉最新一页
-        if (seq !== orderReqSeq) { loadOrders(false); return }
-        // 首页/某页数据不足以填满屏幕时，继续加载直到出现滚动或没有更多
-        if (orderHasMore.value && sentinelVisible()) loadOrders(false)
+        // 期间发生过重置（切 Tab 等）：用最新 seq 补拉第一页
+        if (seq !== orderReqSeq) loadOrders(false)
       })
   } else {
     // 普通用户：仅查看本机本地订单
     try { orders.value = JSON.parse(localStorage.getItem('shaokao_orders') || '[]') }
     catch { orders.value = [] }
   }
-}
-
-// 滚动加载哨兵是否接近视口底部（rootMargin 300px 与 IntersectionObserver 保持一致）
-function sentinelVisible() {
-  const el = document.getElementById('order-list-sentinel')
-  if (!el) return false
-  const rect = el.getBoundingClientRect()
-  return rect.top <= window.innerHeight + 300
 }
 
 function setupOrderObserver() {
@@ -477,7 +472,7 @@ function setupOrderObserver() {
   const sentinel = document.getElementById('order-list-sentinel')
   if (!sentinel) return
   orderObserver = new IntersectionObserver((entries) => {
-    if (entries[0] && entries[0].isIntersecting) loadOrders(false)
+    if (entries[0]?.isIntersecting && activeTab.value === 1) loadOrders(false)
   }, { rootMargin: '300px 0px' })
   orderObserver.observe(sentinel)
 }

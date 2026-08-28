@@ -2,11 +2,12 @@ package com.bbq.module.flashsale.service;
 
 import cn.hutool.core.collection.CollUtil;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
-import com.bbq.module.flashsale.config.PageResult;
+import com.bbq.framework.common.pojo.PageResult;
 import com.bbq.module.flashsale.entity.OrderInfo;
 import com.bbq.module.flashsale.entity.OrderItem;
 import com.bbq.module.flashsale.mapper.OrderItemMapper;
 import com.bbq.module.flashsale.mapper.OrderMapper;
+import com.bbq.module.flashsale.mq.producer.OrderTimeoutProducer;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -18,27 +19,34 @@ import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
-public class OrderService {
+public class OrderInfoService {
 
     private final OrderMapper orderMapper;
     private final OrderItemMapper orderItemMapper;
+    private final OrderTimeoutProducer orderTimeoutProducer;
 
     @Transactional(rollbackFor = Exception.class)
     public Long createOrder(OrderInfo orderInfo) {
         List<OrderItem> items = orderInfo.getItems();
+
+        if (orderInfo.getStatus() == null) {
+            orderInfo.setStatus(OrderInfo.STATUS_UNPAID);
+        }
 
         BigDecimal total = BigDecimal.ZERO;
         for (OrderItem item : items) {
             total = total.add(item.getPrice().multiply(BigDecimal.valueOf(item.getQuantity())));
         }
         orderInfo.setTotalAmount(total);
-        orderInfo.setStatus(0);
         orderMapper.insert(orderInfo);
-
         for (OrderItem item : items) {
             item.setOrderId(orderInfo.getId());
         }
         orderItemMapper.insert(items);
+
+        // 固定 TTL 队列在 30 分钟后将消息死信到订单过期队列。
+        // 放在事务内发送：发送失败会回滚订单；事务回滚产生的孤儿消息会因查不到订单被安全忽略。
+        orderTimeoutProducer.send(orderInfo.getId());
         return orderInfo.getId();
     }
 
@@ -61,9 +69,8 @@ public class OrderService {
                         .last("LIMIT " + offset + ", " + limit)
         );
 
-        boolean hasMore = offset + orders.size() < total;
         if (CollUtil.isEmpty(orders)) {
-            return PageResult.of(orders, total, hasMore);
+            return new PageResult<OrderInfo>(orders, total);
         }
 
         // 3. 提取当前页订单ID
@@ -81,6 +88,23 @@ public class OrderService {
         // 6. 组装数据
         orders.forEach(order -> order.setItems(itemMap.get(order.getId())));
 
-        return PageResult.of(orders, total, hasMore);
+        return new PageResult<OrderInfo>(orders, total);
+    }
+
+    public void updateOrderStatus(OrderInfo orderInfo) {
+        orderMapper.updateById(orderInfo);
+    }
+
+    public boolean updateStatusIfMatch(Long orderId, int expectedStatus, int targetStatus) {
+        return orderMapper.updateStatusIfMatch(orderId, expectedStatus, targetStatus) == 1;
+    }
+
+    public OrderInfo getOrder(Long orderId) {
+        return orderMapper.selectById(orderId);
+    }
+
+    public OrderInfo getOrderByRequestId(String requestId) {
+        return orderMapper.selectOne(new LambdaQueryWrapper<OrderInfo>()
+                .eq(OrderInfo::getRequestId, requestId));
     }
 }

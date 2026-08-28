@@ -9,11 +9,11 @@ import org.springframework.web.method.annotation.MethodArgumentTypeMismatchExcep
 
 @Slf4j
 @RestControllerAdvice
-public class GlobalExceptionHandler {
+public class FlashSaleGlobalExceptionHandler {
 
     @ExceptionHandler(BusinessException.class)
     public Result<Void> handleBusiness(BusinessException e) {
-        log.warn("业务异常 [{}]: {}", e.getResultCode().getCode(), e.getMessage());
+        log.warn("业务异常 [{}]: {}", e.getResultCode().getCode(), e.getMessage(),e);
         return Result.error(e.getResultCode(), e.getMessage());
     }
 
