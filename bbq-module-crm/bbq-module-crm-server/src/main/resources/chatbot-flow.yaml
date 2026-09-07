@@ -1,0 +1,74 @@
+# =====================================================================
+# 机器人主动追问 · 流程配置表
+# 由 ChatbotFlowRegistry 启动时加载（根级直接是 sessionTtlMinutes；
+# 若包了 chatbot: 包裹层 Registry 也会自动解包）；后续可改为 DB 配置表热加载
+# =====================================================================
+# 会话在 Redis 中的存活时长（分钟）：客户超过该时长未回复，状态过期，下条消息重新开一轮
+sessionTtlMinutes: 30
+
+wechatKf:
+  corpId: "wwffec48563072c475"                # 企业 CorpID（我的企业 -> 企业信息 -> 企业ID）
+  token: "hfQhcu0M3ek8ExB4CmEWS5ntTqUN"        # 回调 URL 校验 Token（走拉取模式可不配，回调模式才需要）
+  encodingAesKey: "LPctResrs6NNov4baa4uSpMtKorBGxkZhE6m6oGF9ko"        # 43 位 EncodingAESKey（仅回调安全模式需要）
+  secret: "PdN1V38_LJmMUlkBPddqnihiSKryjHSWw0FZ36k9csQ"                # 微信客服 Secret（kf 后台「开发配置」页获取）
+                            # corpId + secret 配好后自动启用「拉取模式」（每 5s 轮询 sync_msg，无需回调 URL）；
+                            # 若日志报 60020：把服务器出口 IP 加到企微后台「企业可信IP」
+                            # 安全提醒：secret 是敏感凭证，别把这个文件提交到公开仓库
+
+flows:
+  # ---------------------------------------------------------------
+  # 示例流程：线索收集（客户进来 -> 机器人逐项追问 -> 落库线索）
+  # ---------------------------------------------------------------
+  - id: clue_collect
+    name: 线索收集
+    entryStepId: ask_name
+    onCompleteAction: save_clue        # 完成后触发 SaveClueCompletionHandler
+    completeReply: "好的 {name}，信息已收到！我们会尽快联系你，感谢配合～"
+
+    steps:
+      - stepId: ask_name
+        stepName: 收集称呼
+        question: "您好，欢迎咨询！请问怎么称呼您？"
+        slots:
+          - key: name
+            name: 称呼
+            type: TEXT
+            required: true
+            maxRetry: 3
+            retryPrompt: "抱歉没看明白，请直接回复您的称呼，比如：王先生"
+        nextStepId: ask_phone
+
+      - stepId: ask_phone
+        stepName: 收集手机号
+        question: "请问您的手机号是多少？方便我们联系您～"
+        slots:
+          - key: phone
+            name: 手机号
+            type: PHONE
+            required: true
+            maxRetry: 3
+            retryPrompt: "手机号格式好像不对哦，请回复 11 位手机号，例如 13800138000"
+        nextStepId: ask_intent
+
+      - stepId: ask_intent
+        stepName: 收集需求
+        question: "您主要想了解哪方面呢？1. 产品购买  2. 代理合作  3. 售后服务"
+        slots:
+          - key: intent
+            name: 咨询类型
+            type: CHOICE
+            required: true
+            options: ["产品购买", "代理合作", "售后服务"]
+            maxRetry: 3
+            retryPrompt: "请回复序号或选项名称：1. 产品购买  2. 代理合作  3. 售后服务"
+        nextStepId: ask_budget
+
+      - stepId: ask_budget
+        stepName: 收集预算
+        question: "您的大概预算范围是多少呢？（可不填，直接回复\"跳过\"也可以）"
+        slots:
+          - key: budget
+            name: 预算
+            type: NUMBER
+            required: false          # 非必填：提取不到自动跳过
+        nextStepId: null             # 最后一步，无下一步即流程完成

@@ -27,10 +27,10 @@ public class CrmClueController {
         return CommonResult.success(crmClueService.getClue(clue));
     }
 
-    @PostMapping("/get-4mobile")
-    @PermitAll
-    public CommonResult<List<CrmClue>> get4Mobile(@RequestBody CrmClue clue) {
-        return CommonResult.success(crmClueService.getClueEndingWith(clue));
-    }
+//    @PostMapping("/get-4mobile")
+//    @PermitAll
+//    public CommonResult<List<CrmClue>> get4Mobile(@RequestBody CrmClue clue) {
+//        return CommonResult.success(crmClueService.getClueEndingWith(clue));
+//    }
 
 }
