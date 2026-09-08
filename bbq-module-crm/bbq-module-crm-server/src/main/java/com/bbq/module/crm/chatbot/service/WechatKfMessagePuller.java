@@ -73,6 +73,11 @@ public class WechatKfMessagePuller {
     /** 退避期截止时间戳（毫秒）。当前时间 < 该值则跳过本次 sync_msg */
     private final AtomicLong backoffUntilMs = new AtomicLong(0);
 
+    /** 诊断状态（供 ChatbotStatusController 读取）：最近一次拉取尝试/成功时间与最近 errcode */
+    private volatile long lastAttemptAtMs = 0L;
+    private volatile long lastSuccessAtMs = 0L;
+    private volatile String lastErrcode = "-";
+
     /**
      * 拉取间隔默认 30s，可通过属性 chatbot.pullIntervalMs 覆盖（如 -Dchatbot.pullIntervalMs=10000）。
      * 不能用 5s 级高频：纯拉取模式下 sync_msg 的 token 参数传空（无回调来源），
@@ -99,9 +104,11 @@ public class WechatKfMessagePuller {
             return;
         }
         try {
+            lastAttemptAtMs = System.currentTimeMillis();
             pullOnce(kf);
         } catch (Exception e) {
             // 这里兜底防异常逃逸：网络/序列化挂掉也要进退避，否则会 5s 一次刷日志
+            lastErrcode = "exception";
             log.error("[chatbot] sync_msg 调用异常，将进入退避", e);
             scheduleBackoff();
         }
@@ -133,6 +140,7 @@ public class WechatKfMessagePuller {
         JSONObject result = JSON.parseObject(resp.body());
 
         int errcode = result.getIntValue("errcode");
+        lastErrcode = String.valueOf(errcode);
         if (errcode == 42001 || errcode == 40014) {
             // token 失效：清缓存 + 退避计数清零，下轮自动重取，**不计入错误**（拿新 token 后往往就正常了）
             tokenService.invalidate();
@@ -173,6 +181,7 @@ public class WechatKfMessagePuller {
 
         // 走到这里说明 sync_msg 至少没拒绝：成功（或 msg_list 干脆为空也算成功），重置退避
         resetBackoff(null);
+        lastSuccessAtMs = System.currentTimeMillis();
 
         JSONArray msgList = result.getJSONArray("msg_list");
         if (msgList != null) {
@@ -223,6 +232,37 @@ public class WechatKfMessagePuller {
         long errs = Math.max(1, consecutiveErrors.get());
         int idx = (int) Math.min(errs, BACKOFF_STEPS_MS.length - 1);
         return BACKOFF_STEPS_MS[idx] / 1000;
+    }
+
+    /**
+     * 拉取器运行状态快照（只读诊断，供 GET /chatbot/status）。
+     * 不含消息内容，不含凭证明文；openKfid 打码。
+     */
+    public java.util.Map<String, Object> snapshotStatus() {
+        java.util.Map<String, Object> m = new java.util.LinkedHashMap<>();
+        ChatbotFlowConfig.WechatKfConfig kf =
+                flowRegistry.getConfig() != null ? flowRegistry.getConfig().getWechatKf() : null;
+        boolean configured = kf != null && !isBlank(kf.getCorpId()) && !isBlank(kf.getSecret());
+        m.put("configured", configured);
+        m.put("pullModeEnabled", kf != null && kf.isPullModeEnabled());
+        m.put("openKfidMasked", kf == null ? null : mask(kf.getOpenKfid()));
+        m.put("lastErrcode", lastErrcode);
+        m.put("lastAttemptAtMs", lastAttemptAtMs);
+        m.put("lastSuccessAtMs", lastSuccessAtMs);
+        m.put("consecutiveErrors", consecutiveErrors.get());
+        m.put("backoffRemainingSeconds",
+                Math.max(0, (backoffUntilMs.get() - System.currentTimeMillis()) / 1000));
+        m.put("cursorInRedis", Boolean.TRUE.equals(stringRedisTemplate.hasKey(CURSOR_KEY)));
+        m.put("tokenInRedis", tokenService.hasCachedToken());
+        return m;
+    }
+
+    /** openKfid 打码：前 8 位 + *** */
+    private String mask(String v) {
+        if (isBlank(v)) {
+            return null;
+        }
+        return v.length() <= 8 ? "***" : v.substring(0, 8) + "***";
     }
 
     private void handleMsg(JSONObject msg) {

@@ -77,6 +77,11 @@ public class WeComTokenService {
         stringRedisTemplate.delete(TOKEN_CACHE_KEY);
     }
 
+    /** Redis 里是否还有缓存的 access_token（诊断用） */
+    public boolean hasCachedToken() {
+        return Boolean.TRUE.equals(stringRedisTemplate.hasKey(TOKEN_CACHE_KEY));
+    }
+
     private boolean isBlank(String s) {
         return s == null || s.isBlank();
     }
