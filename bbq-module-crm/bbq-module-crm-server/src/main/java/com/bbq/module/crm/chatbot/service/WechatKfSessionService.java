@@ -31,6 +31,8 @@ public class WechatKfSessionService {
 
     private static final String TRANS_URL =
             "https://qyapi.weixin.qq.com/cgi-bin/kf/service_state/trans?access_token=";
+    private static final String GET_STATE_URL =
+            "https://qyapi.weixin.qq.com/cgi-bin/kf/service_state/get?access_token=";
 
     @Resource
     private ChatbotFlowRegistry flowRegistry;
@@ -48,9 +50,20 @@ public class WechatKfSessionService {
      * @return true=转接成功；false=未配置/转接失败（原因见日志）
      */
     public boolean transferToServicer(String openKfid, String externalUserId) {
+        return transferToServicer(openKfid, externalUserId, null);
+    }
+
+    /**
+     * 转人工（运营侧可指定具体接待人员，未指定时用 yaml 配置的 transferServicerUserid）
+     *
+     * @param explicitServicer 非空时优先使用（如运营从后台指定了具体客服），否则读 yaml 配置
+     */
+    public boolean transferToServicer(String openKfid, String externalUserId, String explicitServicer) {
         ChatbotFlowConfig.WechatKfConfig kf =
                 flowRegistry.getConfig() != null ? flowRegistry.getConfig().getWechatKf() : null;
-        String servicer = kf == null ? null : kf.getTransferServicerUserid();
+        String servicer = (explicitServicer != null && !explicitServicer.isBlank())
+                ? explicitServicer
+                : (kf == null ? null : kf.getTransferServicerUserid());
         if (servicer == null || servicer.isBlank()) {
             log.info("[chatbot] 未配置 transferServicerUserid，会话不转人工（机器人收尾后结束）");
             return false;
@@ -102,5 +115,31 @@ public class WechatKfSessionService {
                 .build();
         HttpResponse<String> resp = httpClient.send(request, HttpResponse.BodyHandlers.ofString());
         return JSON.parseObject(resp.body());
+    }
+
+    /**
+     * 查询客户当前会话状态（service_state：0 未处理 / 1 API 接待 / 2 待接入池 / 3 人工 / 4 已结束）
+     * 用于运营确认「这条客户现在到底在机器人手里还是人工手里」
+     */
+    public JSONObject getServiceState(String openKfid, String externalUserId) {
+        String token = tokenService.getAccessToken();
+        if (token == null) {
+            return null;
+        }
+        try {
+            JSONObject body = new JSONObject();
+            body.put("open_kfid", openKfid);
+            body.put("external_userid", externalUserId);
+            HttpRequest request = HttpRequest.newBuilder()
+                    .uri(URI.create(GET_STATE_URL + token))
+                    .header("Content-Type", "application/json")
+                    .POST(HttpRequest.BodyPublishers.ofString(body.toJSONString()))
+                    .build();
+            HttpResponse<String> resp = httpClient.send(request, HttpResponse.BodyHandlers.ofString());
+            return JSON.parseObject(resp.body());
+        } catch (Exception e) {
+            log.error("[chatbot] 查询 service_state 异常", e);
+            return null;
+        }
     }
 }
