@@ -73,8 +73,12 @@ public class WechatKfMessagePuller {
     /** 退避期截止时间戳（毫秒）。当前时间 < 该值则跳过本次 sync_msg */
     private final AtomicLong backoffUntilMs = new AtomicLong(0);
 
-    /** 每 5 秒拉一次；corpid/secret 未配置时静默跳过（不刷日志） */
-    @Scheduled(fixedDelay = 5000)
+    /**
+     * 拉取间隔默认 30s，可通过属性 chatbot.pullIntervalMs 覆盖（如 -Dchatbot.pullIntervalMs=10000）。
+     * 不能用 5s 级高频：纯拉取模式下 sync_msg 的 token 参数传空（无回调来源），
+     * 官方文档明确「不填 token 接口有严格的频率限制」，社区实测 5s 一次就会 45009。
+     */
+    @Scheduled(fixedDelayString = "${chatbot.pullIntervalMs:30000}")
     public void pull() {
         var kf = flowRegistry.getConfig() != null ? flowRegistry.getConfig().getWechatKf() : null;
         if (kf == null || isBlank(kf.getCorpId()) || isBlank(kf.getSecret())) {
