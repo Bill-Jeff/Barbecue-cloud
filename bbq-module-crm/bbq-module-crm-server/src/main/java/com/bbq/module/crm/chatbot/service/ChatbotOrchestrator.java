@@ -31,6 +31,9 @@ public class ChatbotOrchestrator {
     private WechatKfReplySender replySender;
 
     @Resource
+    private WechatKfSessionService sessionService;
+
+    @Resource
     private List<CompletionActionHandler> completionHandlers;
 
     /**
@@ -65,6 +68,9 @@ public class ChatbotOrchestrator {
                             log.error("[chatbot] 完成动作 {} 执行失败", h.action(), e);
                         }
                     });
+            // 完成动作执行完（线索已落库），把会话转给人工继续接待；
+            // 未配置 transferServicerUserid 时为空操作，机器人收尾后结束
+            sessionService.transferToServicer(openKfid, externalUserId);
         }
     }
 

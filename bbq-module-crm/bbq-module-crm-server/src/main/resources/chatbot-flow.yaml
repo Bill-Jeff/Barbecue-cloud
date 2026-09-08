@@ -11,6 +11,8 @@ wechatKf:
   token: "hfQhcu0M3ek8ExB4CmEWS5ntTqUN"        # 回调 URL 校验 Token（走拉取模式可不配，回调模式才需要）
   encodingAesKey: "LPctResrs6NNov4baa4uSpMtKorBGxkZhE6m6oGF9ko"        # 43 位 EncodingAESKey（仅回调安全模式需要）
   secret: "PdN1V38_LJmMUlkBPddqnihiSKryjHSWw0FZ36k9csQ"                # 微信客服 Secret（kf 后台「开发配置」页获取）
+  transferServicerUserid: ""                 # 收集完线索自动转人工的接待人员 userid（企微通讯录成员），留空 = 不转人工；
+                                               # 转接后 TA 在企微「工作台 → 微信客服」继续接待（前提：TA 已激活企微）
                             # corpId + secret 配好后自动启用「拉取模式」（每 5s 轮询 sync_msg，无需回调 URL）；
                             # 若日志报 60020：把服务器出口 IP 加到企微后台「企业可信IP」
                             # 安全提醒：secret 是敏感凭证，别把这个文件提交到公开仓库

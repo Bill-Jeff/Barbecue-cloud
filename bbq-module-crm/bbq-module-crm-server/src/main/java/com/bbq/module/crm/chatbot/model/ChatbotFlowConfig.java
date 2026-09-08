@@ -46,5 +46,14 @@ public class ChatbotFlowConfig {
          * 关闭后 corpId/secret 仍然保留（send_msg 仍需要用它取 access_token 真实下发）。
          */
         private boolean pullModeEnabled = true;
+
+        /**
+         * 流程收集完成（如线索落库）后转人工的接待人员 userid（企微通讯录成员）。
+         * 调 service_state/trans 把会话置为「由人工接待」，之后 TA 在企微客户端
+         * （工作台 → 微信客服）里继续回复客户；人工消息仍能被 sync_msg 拉到（origin=5）。
+         * 留空 = 不转人工（机器人收尾后静默结束）；
+         * 前提：TA 已激活企微且处于「正在接待」，否则接口报 95014。
+         */
+        private String transferServicerUserid;
     }
 }
