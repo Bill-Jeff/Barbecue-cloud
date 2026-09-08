@@ -342,19 +342,28 @@ public class WechatKfMessagePuller {
             return;
         }
 
-        // 事件类消息：客户进入会话（kf_enter_session）-> 机器人主动开场提问
-        // 事件格式兼容两种报文：顶层 event_type 或 event.event_type
-        if ("event".equals(msgtype) && openKfid != null && externalUserId != null) {
+        // 事件类消息：客户进入会话（enter_session）-> 机器人主动开场提问
+        // 关键：sync_msg 对 msgtype=event 的消息顶层不返回 open_kfid / external_userid（官方文档明文），
+        // 必须从嵌套 event 对象里取；event_type 是 enter_session（不是回调 URL 的 kf_enter_session）
+        if ("event".equals(msgtype)) {
             String eventType = msg.getString("event_type");
             JSONObject event = msg.getJSONObject("event");
             if (eventType == null && event != null) {
                 eventType = event.getString("event_type");
             }
-            if ("kf_enter_session".equals(eventType)) {
+            String evtOpenKfid = (openKfid != null && !openKfid.isEmpty())
+                    ? openKfid
+                    : (event != null ? event.getString("open_kfid") : null);
+            String evtExternalUserId = (externalUserId != null && !externalUserId.isEmpty())
+                    ? externalUserId
+                    : (event != null ? event.getString("external_userid") : null);
+            if ("enter_session".equals(eventType) && evtOpenKfid != null && evtExternalUserId != null) {
                 log.info("[chatbot] 客户进入会话: openKfid={}, externalUserId={}, scene={}",
-                        openKfid, externalUserId,
+                        evtOpenKfid, evtExternalUserId,
                         event != null ? event.getString("scene") : null);
-                orchestrator.onCustomerEnter(openKfid, externalUserId);
+                orchestrator.onCustomerEnter(evtOpenKfid, evtExternalUserId);
+            } else if (eventType != null) {
+                log.info("[chatbot] 收到事件推送: type={}", eventType);
             }
         }
     }
