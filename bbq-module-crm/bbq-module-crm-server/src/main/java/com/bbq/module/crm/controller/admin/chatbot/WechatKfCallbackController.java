@@ -1,11 +1,15 @@
 package com.bbq.module.crm.controller.admin.chatbot;
 
 import com.bbq.module.crm.chatbot.config.ChatbotFlowRegistry;
+import com.bbq.module.crm.chatbot.service.WechatKfMessagePuller;
 import com.bbq.module.crm.chatbot.util.WechatCallbackCrypto;
 import jakarta.annotation.Resource;
 import jakarta.annotation.security.PermitAll;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.web.bind.annotation.*;
+
+import java.time.Duration;
 
 import static com.bbq.module.crm.chatbot.util.WechatCallbackCrypto.extractXmlValue;
 
@@ -24,6 +28,12 @@ public class WechatKfCallbackController {
 
     @Resource
     private ChatbotFlowRegistry flowRegistry;
+
+    @Resource
+    private StringRedisTemplate stringRedisTemplate;
+
+    @Resource
+    private WechatKfMessagePuller puller;
 
     /**
      * 回调 URL 校验（企微/微信客服协议）：
@@ -89,6 +99,15 @@ public class WechatKfCallbackController {
             String msgType = extractXmlValue(xml, "MsgType");
             String fromUser = extractXmlValue(xml, "FromUserName");
             String openKfid = firstNonNull(extractXmlValue(xml, "OpenKfId"), extractXmlValue(xml, "ToUserName"));
+
+            // 回调推送里的 Token（10 分钟有效）：存 Redis 供 Puller 传给 sync_msg，
+            // 解除「无 token 严格频率限制」；同时立即触发一次拉取（秒级响应，不再等下个轮询周期）。
+            // 注意：消息本体仍由 puller 处理，这里绝不直接喂状态机（FromUserName 是昵称，会 40096）。
+            String cbToken = extractXmlValue(xml, "Token");
+            if (cbToken != null && !cbToken.isBlank()) {
+                stringRedisTemplate.opsForValue().set(WechatKfMessagePuller.CB_TOKEN_KEY, cbToken, Duration.ofMinutes(9));
+            }
+            puller.triggerFromCallback();
 
             if ("text".equals(msgType)) {
                 // 注意：callback XML 里的 FromUserName 在「客户=管理员本人」/ 加密模式下

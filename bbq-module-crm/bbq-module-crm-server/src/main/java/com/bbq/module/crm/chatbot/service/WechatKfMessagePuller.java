@@ -16,6 +16,9 @@ import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
 import java.time.Duration;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicLong;
 
 /**
@@ -37,6 +40,9 @@ public class WechatKfMessagePuller {
     private static final String CURSOR_KEY = "chatbot:wecom:kf:sync_cursor";
     private static final String PROCESSED_KEY = "chatbot:wecom:kf:processed_msgids";
     private static final String SYNC_MSG_URL = "https://qyapi.weixin.qq.com/cgi-bin/kf/sync_msg?access_token=";
+
+    /** 回调事件里的 Token（10 分钟有效），传给 sync_msg 可解除「无 token 严格频率限制」 */
+    public static final String CB_TOKEN_KEY = "chatbot:wecom:kf:callback_token";
 
     /** origin=3 表示客户在微信客服会话中发送的消息 */
     private static final int ORIGIN_CUSTOMER = 3;
@@ -78,6 +84,16 @@ public class WechatKfMessagePuller {
     private volatile long lastSuccessAtMs = 0L;
     private volatile String lastErrcode = "-";
 
+    /** 拉取互斥锁：定时轮询与回调触发共用，保证同一时刻只有一个 sync_msg 在途 */
+    private final AtomicBoolean pulling = new AtomicBoolean(false);
+
+    /** 回调触发的拉取跑独立单线程，不占用回调 HTTP 线程、不与 @Scheduled 线程争抢 */
+    private final ExecutorService triggerExecutor = Executors.newSingleThreadExecutor(r -> {
+        Thread t = new Thread(r, "chatbot-kf-pull-trigger");
+        t.setDaemon(true);
+        return t;
+    });
+
     /**
      * 拉取间隔默认 30s，可通过属性 chatbot.pullIntervalMs 覆盖（如 -Dchatbot.pullIntervalMs=10000）。
      * 不能用 5s 级高频：纯拉取模式下 sync_msg 的 token 参数传空（无回调来源），
@@ -103,15 +119,43 @@ public class WechatKfMessagePuller {
         if (now < until) {
             return;
         }
+        runPull(kf);
+    }
+
+    /** 定时轮询与回调触发共用的执行体：CAS 互斥，保证同一时刻只有一个 sync_msg 在途 */
+    private void runPull(ChatbotFlowConfig.WechatKfConfig kf) {
+        if (!pulling.compareAndSet(false, true)) {
+            return;
+        }
         try {
             lastAttemptAtMs = System.currentTimeMillis();
             pullOnce(kf);
         } catch (Exception e) {
-            // 这里兜底防异常逃逸：网络/序列化挂掉也要进退避，否则会 5s 一次刷日志
+            // 这里兜底防异常逃逸：网络/序列化挂掉也要进退避，否则会刷日志
             lastErrcode = "exception";
             log.error("[chatbot] sync_msg 调用异常，将进入退避", e);
             scheduleBackoff();
+        } finally {
+            pulling.set(false);
         }
+    }
+
+    /**
+     * 回调触发入口：收到企微推送立刻拉一次（不等下一个轮询周期），实现秒级响应。
+     * 退避期内不触发，避免限流雪上加霜。
+     */
+    public void triggerFromCallback() {
+        if (System.currentTimeMillis() < backoffUntilMs.get()) {
+            return;
+        }
+        triggerExecutor.execute(() -> {
+            ChatbotFlowConfig.WechatKfConfig kf =
+                    flowRegistry.getConfig() != null ? flowRegistry.getConfig().getWechatKf() : null;
+            if (kf == null || !kf.isPullModeEnabled() || isBlank(kf.getCorpId()) || isBlank(kf.getSecret())) {
+                return;
+            }
+            runPull(kf);
+        });
     }
 
     private void pullOnce(ChatbotFlowConfig.WechatKfConfig kf) throws Exception {
@@ -123,7 +167,10 @@ public class WechatKfMessagePuller {
 
         JSONObject body = new JSONObject();
         body.put("cursor", cursor == null ? "" : cursor);
-        body.put("token", "");
+        // 回调事件带来的 Token（10 分钟有效）传给 sync_msg 可解除「无 token 严格频率限制」；
+        // 没有回调时传空走 30s 兜底轮询（30s 间隔远低于该阈值，不会 45009）
+        String cbToken = stringRedisTemplate.opsForValue().get(CB_TOKEN_KEY);
+        body.put("token", isBlank(cbToken) ? "" : cbToken);
         body.put("limit", 1000);
         // sync_msg 按客服账号拉取（官方文档 open_kfid 标注必填）：
         // 应用当前没有任何「可调用」授权账号时不带它会报 95000 invalid open_kfid
@@ -254,6 +301,8 @@ public class WechatKfMessagePuller {
                 Math.max(0, (backoffUntilMs.get() - System.currentTimeMillis()) / 1000));
         m.put("cursorInRedis", Boolean.TRUE.equals(stringRedisTemplate.hasKey(CURSOR_KEY)));
         m.put("tokenInRedis", tokenService.hasCachedToken());
+        // true = 回调通道存活（9 分钟内收到过带 Token 的推送）；一直 false = 回调没通，纯靠 30s 兜底轮询
+        m.put("callbackTokenInRedis", Boolean.TRUE.equals(stringRedisTemplate.hasKey(CB_TOKEN_KEY)));
         return m;
     }
 
